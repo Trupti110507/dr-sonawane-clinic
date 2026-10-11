@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Field, { Notice } from '../components/Field';
-import { friendlyError, portalPath, useAuth } from '../lib/auth';
+import { STAFF_IDLE_MINUTES, friendlyError, portalPath, useAuth, wasSignedOutForIdleness } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { btnOutline, btnPrimary, card, pageTitle, textLink } from '../lib/ui';
 
@@ -15,7 +15,8 @@ const tabLook = (active: boolean) =>
 export default function SignIn() {
   const { profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('patient');
+  const [idle] = useState(wasSignedOutForIdleness);
+  const [tab, setTab] = useState<Tab>(idle ? 'staff' : 'patient');
 
   // Already signed in (or just finished signing in): go to the right portal.
   useEffect(() => {
@@ -25,6 +26,11 @@ export default function SignIn() {
   return (
     <main id="main" className="mx-auto max-w-lg px-4 py-10 sm:px-6 sm:py-14">
       <h1 className={pageTitle}>Sign in</h1>
+      {idle && (
+        <div className="mt-6">
+          <Notice kind="info">You were signed out because the app was not used for {STAFF_IDLE_MINUTES} minutes. Sign in again to continue.</Notice>
+        </div>
+      )}
 
       {!supabase ? (
         <div className="mt-6">

@@ -1,9 +1,21 @@
 # Dr. Sonawane Clinic App
 
-Stage 1 of 9: project foundation, clinic setup tables, and the public welcome page.
+A clinic management app for one clinic, with three portals: Patient, Doctor and Admin.
+All nine build stages are complete. You do not need to know how to code to run it.
 
-You do not need to know how to code. Follow Part A to see the page on your
-computer (about 10 minutes), then Part B to connect the database (about 15 minutes).
+## Where to find things
+
+| You want to | Open |
+| --- | --- |
+| Put the app into real use | `STAGE9-GUIDE.md` (go-live steps) |
+| Run the clinic's app day to day | `HANDOVER.md` |
+| Set up a new production database | `supabase/PRODUCTION_setup_all_in_one.sql` |
+| Check that a database is locked down | `supabase/CHECK_security.sql` |
+| See how each feature was set up and tested | `STAGE2-GUIDE.md` to `STAGE8-GUIDE.md` |
+| Set up SMS codes for patients | `SMS-SETUP-GUIDE.md` |
+
+The rest of this page is the original Stage 1 setup: seeing the app on your
+computer (Part A) and connecting a database (Part B).
 
 ## What is in this folder
 
@@ -137,3 +149,8 @@ Progress photos and photo consent are set up with the steps in `STAGE7-GUIDE.md`
 
 Payments, receipts, refunds, the revenue summary and online payment are set up
 with the steps in `STAGE8-GUIDE.md`.
+
+## Stage 9
+
+The final permission test, the production setup and the handover are in
+`STAGE9-GUIDE.md` and `HANDOVER.md`.

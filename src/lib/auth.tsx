@@ -24,6 +24,17 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+/** Doctors and administrators are signed out after this many minutes without using the app. */
+export const STAFF_IDLE_MINUTES = 30;
+const IDLE_KEY = 'clinic-last-used';
+const IDLE_FLAG = 'clinic-signed-out-idle';
+/** True once, right after an automatic sign-out, so the sign-in page can explain what happened. */
+export function wasSignedOutForIdleness(): boolean {
+  const yes = sessionStorage.getItem(IDLE_FLAG) === '1';
+  sessionStorage.removeItem(IDLE_FLAG);
+  return yes;
+}
+
 /** The home page of each portal. */
 export function portalPath(role: Role): string {
   return role === 'admin' ? '/admin' : role === 'doctor' ? '/doctor' : '/patient';
@@ -74,11 +85,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile: loaded.userId === userId ? loaded.profile : null,
       refreshProfile: () => loadProfile(userId),
       signOut: async () => {
+        localStorage.removeItem(IDLE_KEY);
         await supabase?.auth.signOut();
       },
     }),
     [sessionChecked, loaded, userId, session, loadProfile],
   );
+
+  // Staff computers at the clinic are shared: a doctor or administrator who
+  // stops using the app is signed out, so the next person cannot open records.
+  const staff = value.profile?.role === 'doctor' || value.profile?.role === 'admin';
+  useEffect(() => {
+    if (!staff || !supabase) return;
+    const read = () => Number(localStorage.getItem(IDLE_KEY) ?? 0);
+    const leave = () => {
+      localStorage.removeItem(IDLE_KEY);
+      sessionStorage.setItem(IDLE_FLAG, '1');
+      void supabase!.auth.signOut();
+    };
+    // Coming back after a long gap (closed laptop, reopened browser) counts as idle too.
+    const last = read();
+    if (last && Date.now() - last > STAFF_IDLE_MINUTES * 60_000) return leave();
+    const touch = () => localStorage.setItem(IDLE_KEY, String(Date.now()));
+    touch();
+    const events = ['pointerdown', 'keydown', 'scroll'] as const;
+    events.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    // The time of last use is shared between tabs, so working in one tab keeps the others signed in.
+    const timer = window.setInterval(() => {
+      if (Date.now() - read() > STAFF_IDLE_MINUTES * 60_000) leave();
+    }, 30_000);
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, touch));
+      window.clearInterval(timer);
+    };
+  }, [staff]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
