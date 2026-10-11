@@ -30,6 +30,8 @@ import AdminAudit from './pages/portal/AdminAudit';
 import PatientPrescriptions from './pages/portal/PatientPrescriptions';
 import PatientTreatment from './pages/portal/PatientTreatment';
 import PatientPhotos from './pages/portal/PatientPhotos';
+import PatientPayments from './pages/portal/PatientPayments';
+import AdminPayments from './pages/portal/AdminPayments';
 import SiteHeader from './components/SiteHeader';
 import RequireRole from './components/RequireRole';
 
@@ -115,6 +117,7 @@ export default function App() {
         <Route path="/patient/prescriptions" element={<RequireRole role="patient"><PatientPrescriptions clinic={clinic} /></RequireRole>} />
         <Route path="/patient/treatment" element={<RequireRole role="patient"><PatientTreatment /></RequireRole>} />
         <Route path="/patient/photos" element={<RequireRole role="patient"><PatientPhotos clinic={clinic} /></RequireRole>} />
+        <Route path="/patient/payments" element={<RequireRole role="patient"><PatientPayments clinic={clinic} /></RequireRole>} />
         <Route path="/patient/profile" element={<RequireRole role="patient"><PatientProfile /></RequireRole>} />
 
         {/* Doctor portal */}
@@ -127,6 +130,7 @@ export default function App() {
         {/* Admin portal */}
         <Route path="/admin" element={<RequireRole role="admin"><AdminHome /></RequireRole>} />
         <Route path="/admin/appointments" element={<RequireRole role="admin"><AdminAppointments clinic={clinic} /></RequireRole>} />
+        <Route path="/admin/payments" element={<RequireRole role="admin"><AdminPayments clinic={clinic} onChanged={refresh} /></RequireRole>} />
         <Route path="/admin/time-off" element={<RequireRole role="admin"><AdminTimeOff clinic={clinic} /></RequireRole>} />
         <Route path="/admin/staff" element={<RequireRole role="admin"><AdminStaff /></RequireRole>} />
         <Route path="/admin/clinic" element={<RequireRole role="admin"><AdminClinic settings={clinic.settings} onChanged={refresh} /></RequireRole>} />

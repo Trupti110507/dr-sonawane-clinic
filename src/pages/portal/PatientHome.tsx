@@ -82,6 +82,13 @@ export default function PatientHome({ clinic }: { clinic: ClinicData }) {
           </Link>
         </section>
         <section className={card}>
+          <h2 className="font-display text-2xl">Payments</h2>
+          <p className="mt-2 text-muted">See what is still to pay and print your receipts.</p>
+          <Link to="/patient/payments" className={`${btnOutline} mt-5`}>
+            Open payments
+          </Link>
+        </section>
+        <section className={card}>
           <h2 className="font-display text-2xl">Your details</h2>
           <p className="mt-2 text-muted">Keep your date of birth, address and emergency contact up to date.</p>
           <Link to="/patient/profile" className={`${btnOutline} mt-5`}>
@@ -94,9 +101,6 @@ export default function PatientHome({ clinic }: { clinic: ClinicData }) {
           Book another appointment
         </Link>
       )}
-      <p className="mt-6 text-[0.95rem] text-muted">
-        Receipts will appear here as the clinic switches them on.
-      </p>
     </PortalShell>
   );
 }

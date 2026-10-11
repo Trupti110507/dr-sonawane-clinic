@@ -132,3 +132,8 @@ Prescriptions and treatment plans are set up with the steps in `STAGE6-GUIDE.md`
 ## Stage 7
 
 Progress photos and photo consent are set up with the steps in `STAGE7-GUIDE.md`.
+
+## Stage 8
+
+Payments, receipts, refunds, the revenue summary and online payment are set up
+with the steps in `STAGE8-GUIDE.md`.

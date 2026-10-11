@@ -43,6 +43,7 @@ export const PATIENT_LINKS: PortalLink[] = [
   { to: '/patient/prescriptions', label: 'Prescriptions' },
   { to: '/patient/treatment', label: 'Treatment plans' },
   { to: '/patient/photos', label: 'Photos' },
+  { to: '/patient/payments', label: 'Payments' },
   { to: '/patient/profile', label: 'My profile' },
 ];
 export const DOCTOR_LINKS: PortalLink[] = [
@@ -54,6 +55,7 @@ export const DOCTOR_LINKS: PortalLink[] = [
 export const ADMIN_LINKS: PortalLink[] = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/appointments', label: 'Appointments' },
+  { to: '/admin/payments', label: 'Payments' },
   { to: '/admin/time-off', label: 'Doctor leave' },
   { to: '/admin/clinic', label: 'Clinic details' },
   { to: '/admin/hours', label: 'Hours and holidays' },

@@ -19,6 +19,8 @@ export interface ClinicSettings {
   slot_minutes?: number;
   /** How many days ahead patients may book */
   booking_window_days?: number;
+  /** True once the administrator has switched online payment on */
+  online_payments?: boolean;
 }
 
 export interface WorkingDay {
