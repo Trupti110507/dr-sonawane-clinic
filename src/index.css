@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "@fontsource/marcellus/400.css";
+@import "@fontsource-variable/manrope/wght.css";
+
+/*
+  Brand colours. The two "brand" values are overwritten at runtime with the
+  colours saved in the clinic_settings table, so the admin can rebrand
+  without touching code. Every other shade is derived from these two.
+*/
+:root {
+  --brand-primary: #4f7358; /* sage: buttons, links */
+  --brand-accent: #b9a9d9; /* lavender: highlights */
+}
+
+@theme inline {
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Marcellus", ui-serif, Georgia, serif;
+
+  --color-sage-900: color-mix(in srgb, var(--brand-primary) 52%, #0d1410);
+  --color-sage-700: color-mix(in srgb, var(--brand-primary) 80%, #0d1410);
+  --color-sage-600: var(--brand-primary);
+  --color-sage-300: color-mix(in srgb, var(--brand-primary) 40%, white);
+  --color-sage-200: color-mix(in srgb, var(--brand-primary) 22%, white);
+  --color-sage-100: color-mix(in srgb, var(--brand-primary) 12%, white);
+  --color-sage-50: color-mix(in srgb, var(--brand-primary) 6%, white);
+
+  --color-lavender-700: color-mix(in srgb, var(--brand-accent) 42%, #1f2a24);
+  --color-lavender-400: var(--brand-accent);
+  --color-lavender-200: color-mix(in srgb, var(--brand-accent) 45%, white);
+  --color-lavender-100: color-mix(in srgb, var(--brand-accent) 22%, white);
+
+  --color-ink: #1f2a24;
+  --color-muted: #586159;
+  --color-line: #e2e8e3;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1; /* fees and times line up in columns */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Clear keyboard focus ring everywhere */
+:focus-visible {
+  outline: 3px solid var(--color-lavender-400);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
