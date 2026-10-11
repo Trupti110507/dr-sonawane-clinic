@@ -178,13 +178,13 @@ export default function DoctorPatientRecord({ clinic }: { clinic: ClinicData }) 
         prescriptions={record.prescriptions ?? []}
         myDoctorId={record.my_doctor_id}
         settings={clinic.settings}
-        onChanged={() => { setMessage(''); void load(); }}
+        onChanged={() => { setMessage(''); return load(); }}
       />
       <DoctorPlans
         patientId={patient.id}
         plans={record.treatment_plans ?? []}
         myDoctorId={record.my_doctor_id}
-        onChanged={() => { setMessage(''); void load(); }}
+        onChanged={() => { setMessage(''); return load(); }}
       />
       <DoctorPhotos patientId={patient.id} patientName={patient.full_name} today={today} timezone={tz} />
     </PortalShell>

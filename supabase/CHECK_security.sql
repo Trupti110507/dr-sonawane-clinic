@@ -70,6 +70,16 @@ with checks(n, name, verdict, detail) as (
          'Signed-in people must not be able to confirm their own payments'
 
   union all
+  select 21, 'Only server code can create a patient at the desk',
+         case when to_regprocedure('public.desk_register_patient(uuid, text, date, text, uuid, boolean)') is null then 'NOTE'
+              when has_function_privilege('authenticated', 'public.desk_register_patient(uuid, text, date, text, uuid, boolean)', 'execute') then 'FIX' else 'OK' end,
+         case when to_regprocedure('public.desk_register_patient(uuid, text, date, text, uuid, boolean)') is null then 'File 010 has not been run, so the desk cannot register patients yet' else 'Reached only through the register-patient server function' end
+
+  union all
+  select 22, 'The clinic has at least one doctor and one service listed',
+         case when (select count(*) from public.doctors where is_active) > 0 and (select count(*) from public.services where is_active) > 0 then 'OK' else 'NOTE' end,
+         (select count(*) from public.doctors where is_active) || ' active doctor(s), ' || (select count(*) from public.services where is_active) || ' active service(s). Add them in the Admin portal'
+  union all
   select 9, 'The access log cannot be edited or erased',
          case when count(*) >= 2 then 'OK' else 'FIX' end, count(*) || ' protective triggers on audit_log'
     from pg_trigger t where t.tgrelid = 'public.audit_log'::regclass and not t.tgisinternal

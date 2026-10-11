@@ -10,7 +10,7 @@ interface Props {
   patientId: string;
   plans: TreatmentPlan[];
   myDoctorId: string;
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
 }
 
 type Form = { title: string; patient_instructions: string; clinical_notes: string; total_sessions: string; sessions_done: string; status: PlanStatus };
@@ -37,9 +37,10 @@ export default function DoctorPlans({ patientId, plans, myDoctorId, onChanged }:
   const [error, setError] = useState('');
   // Shown inside this section, next to what was just done
   const [notice, setNotice] = useState('');
-  const changed = (text: string) => {
+  // The message appears only once the list on screen is up to date.
+  const changed = async (text: string) => {
+    await onChanged();
     setNotice(text);
-    onChanged();
   };
 
   async function save(plan: TreatmentPlan, change: Partial<Pick<TreatmentPlan, 'sessions_done' | 'status'>>, done: string) {
@@ -57,9 +58,12 @@ export default function DoctorPlans({ patientId, plans, myDoctorId, onChanged }:
       p_status: change.status ?? plan.status,
       p_plan_id: plan.id,
     });
+    if (failed) {
+      setBusy(false);
+      return setError(friendlyError(failed));
+    }
+    await changed(done);
     setBusy(false);
-    if (failed) return setError(friendlyError(failed));
-    changed(done);
   }
 
   return (
@@ -84,7 +88,7 @@ export default function DoctorPlans({ patientId, plans, myDoctorId, onChanged }:
           <Notice kind="success">{notice}</Notice>
         </div>
       )}
-      {editing === 'new' && <PlanEditor patientId={patientId} initial={EMPTY} onClose={(saved) => { setEditing(null); if (saved) changed(saved); }} />}
+      {editing === 'new' && <PlanEditor patientId={patientId} initial={EMPTY} onClose={(saved) => { setEditing(null); if (saved) void changed(saved); }} />}
 
       {plans.length === 0 ? (
         editing === null && <p className="mt-4 text-muted">No treatment plans yet.</p>
@@ -106,7 +110,7 @@ export default function DoctorPlans({ patientId, plans, myDoctorId, onChanged }:
                       sessions_done: String(p.sessions_done),
                       status: p.status,
                     }}
-                    onClose={(saved) => { setEditing(null); if (saved) changed(saved); }}
+                    onClose={(saved) => { setEditing(null); if (saved) void changed(saved); }}
                   />
                 </li>
               );

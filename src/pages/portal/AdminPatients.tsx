@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import CareAccess from '../../components/CareAccess';
-import { Notice } from '../../components/Field';
+import Field, { Notice } from '../../components/Field';
 import PortalShell, { ADMIN_LINKS } from '../../components/PortalShell';
 import { friendlyError } from '../../lib/auth';
 import type { Doctor } from '../../lib/clinic';
 import { supabase } from '../../lib/supabase';
-import { btnDanger, btnSmall, inputBox, pageTitle } from '../../lib/ui';
+import { btnDanger, btnOutline, btnPrimary, btnSmall, card, inputBox, pageTitle } from '../../lib/ui';
 
 interface PatientRow {
   user_id: string;
@@ -27,6 +27,8 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState('');
   const [accessFor, setAccessFor] = useState('');
+  const [registering, setRegistering] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -63,6 +65,27 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
       <p className="mt-3 max-w-3xl text-muted">
         Contact details and account status only. Medical records are visible to the treating doctor, not here.
       </p>
+
+      {notice && (
+        <div className="mt-6 max-w-3xl">
+          <Notice kind="success">{notice}</Notice>
+        </div>
+      )}
+      {registering ? (
+        <RegisterForm
+          onClose={(saved) => {
+            setRegistering(false);
+            if (saved) {
+              setNotice(saved);
+              void load();
+            }
+          }}
+        />
+      ) : (
+        <button className={`${btnPrimary} mt-6`} onClick={() => { setNotice(''); setRegistering(true); }}>
+          Register a patient
+        </button>
+      )}
 
       <div className="mt-6 max-w-3xl">
         <label htmlFor={searchId} className="block font-semibold text-ink">
@@ -130,5 +153,103 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
         </>
       )}
     </PortalShell>
+  );
+}
+
+/** Front desk: register a walk-in patient by name and mobile number. Contact details only. */
+function RegisterForm({ onClose }: { onClose: (saved?: string) => void }) {
+  const dobId = useId();
+  const genderId = useId();
+  const consentId = useId();
+  const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [again, setAgain] = useState('');
+  const [dob, setDob] = useState('');
+  const [gender, setGender] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [problems, setProblems] = useState<{ name?: string; mobile?: string; again?: string; consent?: string }>({});
+  const today = new Date().toISOString().slice(0, 10);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    const found: typeof problems = {};
+    if (name.trim().length < 2) found.name = "Enter the patient's full name.";
+    if (!/^[6-9]\d{9}$/.test(mobile)) found.mobile = 'Enter a 10-digit mobile number, without +91 or 0.';
+    else if (again !== mobile) found.again = 'The two numbers do not match. Check with the patient and type it again.';
+    if (!consent) found.consent = 'Tick the box once the patient has agreed.';
+    setProblems(found);
+    if (Object.keys(found).length || !supabase) return;
+    setBusy(true);
+    const { error: failed } = await supabase.functions.invoke('register-patient', {
+      body: { full_name: name, mobile, date_of_birth: dob || null, gender: gender || null, consent: true },
+    });
+    setBusy(false);
+    if (failed) {
+      let message = '';
+      try {
+        message = (await (failed as { context?: Response }).context?.json())?.message ?? '';
+      } catch {
+        message = '';
+      }
+      return setError(message ? friendlyError({ message }) : 'The patient could not be registered. Check that the registration server function is set up, then try again.');
+    }
+    onClose(`${name.trim()} is registered. They can sign in later with the mobile number ${mobile}.`);
+  }
+
+  return (
+    <form onSubmit={save} noValidate className={`${card} mt-6 max-w-3xl space-y-5 border-sage-300`}>
+      <h2 className="font-display text-2xl">Register a patient</h2>
+      <p className="text-muted">
+        For a patient at the desk who has not signed in on their own phone. Enter contact details only. The mobile number is how the patient will sign in later, so it must be theirs or a family member's.
+      </p>
+      <Field label="Full name" value={name} maxLength={80} autoComplete="off" error={problems.name} onChange={(e) => setName(e.target.value)} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Mobile number" hint="10 digits" prefix="+91" inputMode="numeric" autoComplete="off" value={mobile} error={problems.mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+        <Field label="Mobile number again" hint="Type it a second time to catch mistakes" prefix="+91" inputMode="numeric" autoComplete="off" value={again} error={problems.again} onChange={(e) => setAgain(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor={dobId} className="block font-semibold text-ink">
+            Date of birth
+          </label>
+          <p className="text-[0.95rem] text-muted">Optional</p>
+          <input id={dobId} type="date" className={inputBox} max={today} value={dob} onChange={(e) => setDob(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor={genderId} className="block font-semibold text-ink">
+            Gender
+          </label>
+          <p className="text-[0.95rem] text-muted">Optional</p>
+          <select id={genderId} className={inputBox} value={gender} onChange={(e) => setGender(e.target.value)}>
+            <option value="">Not recorded</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+            <option value="prefer_not_to_say">Prefers not to say</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div className="flex items-start gap-3">
+          <input id={consentId} type="checkbox" className="mt-1 h-5 w-5 accent-[var(--brand-primary)]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          <label htmlFor={consentId} className="text-ink">
+            I have told the patient that the clinic keeps their contact details and medical record to provide their care, and the patient has agreed.
+          </label>
+        </div>
+        {problems.consent && <p className="mt-1.5 text-[0.95rem] font-medium text-[#b3261e]">{problems.consent}</p>}
+      </div>
+      {error && <Notice kind="error">{error}</Notice>}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button type="submit" disabled={busy} className={btnPrimary}>
+          {busy ? 'Registering…' : 'Register patient'}
+        </button>
+        <button type="button" className={btnOutline} onClick={() => onClose()}>
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }

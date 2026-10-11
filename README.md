@@ -13,6 +13,7 @@ All nine build stages are complete. You do not need to know how to code to run i
 | Check that a database is locked down | `supabase/CHECK_security.sql` |
 | See how each feature was set up and tested | `STAGE2-GUIDE.md` to `STAGE8-GUIDE.md` |
 | Set up SMS codes for patients | `SMS-SETUP-GUIDE.md` |
+| Let the front desk register walk-in patients | `DESK-REGISTRATION-GUIDE.md` |
 
 The rest of this page is the original Stage 1 setup: seeing the app on your
 computer (Part A) and connecting a database (Part B).

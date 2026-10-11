@@ -27,7 +27,7 @@ interface Props {
   myDoctorId: string;
   settings: ClinicSettings;
   /** Reload the record */
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
 }
 
 /** Prescriptions inside the patient record: write a draft, check it, approve it, or withdraw it. */
@@ -41,9 +41,10 @@ export default function DoctorPrescriptions({ patientId, patientName, allergies,
   const [error, setError] = useState('');
   // Shown inside this section, next to what was just done
   const [notice, setNotice] = useState('');
-  const changed = (text: string) => {
+  // The message appears only once the list on screen is up to date.
+  const changed = async (text: string) => {
+    await onChanged();
     setNotice(text);
-    onChanged();
   };
 
   async function run(fn: string, args: Record<string, unknown>, done: string) {
@@ -52,12 +53,15 @@ export default function DoctorPrescriptions({ patientId, patientName, allergies,
     setError('');
     setNotice('');
     const { error: failed } = await supabase.rpc(fn, args);
-    setBusy(false);
-    if (failed) return setError(friendlyError(failed));
+    if (failed) {
+      setBusy(false);
+      return setError(friendlyError(failed));
+    }
+    await changed(done);
     setConfirming(null);
     setWithdrawing(null);
     setReason('');
-    changed(done);
+    setBusy(false);
   }
 
   return (
@@ -90,7 +94,7 @@ export default function DoctorPrescriptions({ patientId, patientName, allergies,
           allergies={allergies}
           initialLines={[{ ...EMPTY_LINE }]}
           initialNotes=""
-          onClose={(saved) => { setEditing(null); if (saved) changed(saved); }}
+          onClose={(saved) => { setEditing(null); if (saved) void changed(saved); }}
         />
       )}
 
@@ -109,7 +113,7 @@ export default function DoctorPrescriptions({ patientId, patientName, allergies,
                     allergies={allergies}
                     initialLines={rx.items.length ? rx.items.map(toLine) : [{ ...EMPTY_LINE }]}
                     initialNotes={rx.general_instructions ?? ''}
-                    onClose={(saved) => { setEditing(null); if (saved) changed(saved); }}
+                    onClose={(saved) => { setEditing(null); if (saved) void changed(saved); }}
                   />
                 </li>
               );

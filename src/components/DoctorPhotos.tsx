@@ -46,16 +46,17 @@ export default function DoctorPhotos({ patientId, patientName, today, timezone }
     setError('');
     setNotice('');
     const { data, error: failed } = await supabase.rpc(fn, args);
-    setBusy(false);
     if (failed) {
+      setBusy(false);
       setError(friendlyError(failed));
       return null;
     }
-    setNotice(done);
     setRemoving(null);
     setWithdrawing(false);
     setAgreed(false);
     await load();
+    setBusy(false);
+    setNotice(done);
     return data ?? true;
   }
 

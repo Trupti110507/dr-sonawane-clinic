@@ -14,8 +14,8 @@ Day-to-day running after go-live is in `HANDOVER.md`.
   visitor who is not signed in can run nothing and read only public clinic details.
 - `supabase/CHECK_security.sql`: a self-check you paste into Supabase. It changes
   nothing and prints OK, FIX or NOTE for 20 checks.
-- `supabase/PRODUCTION_setup_all_in_one.sql`: files 001 to 009 joined into one,
-  for the new production project.
+- `supabase/PRODUCTION_setup_all_in_one.sql`: files 001 to 010 joined into one,
+  for the new production project, with the sample entries removed.
 - **Automatic sign-out for staff:** a doctor or administrator who does not use
   the app for 30 minutes is signed out. Patients on their own phones are not.
 - **Browser security headers** (in `vercel.json`): the site cannot be placed
@@ -81,8 +81,12 @@ separate project, so that test data and real data never mix.
 ### 2.2 Build the database
 
 1. **SQL Editor** > paste all of `supabase/PRODUCTION_setup_all_in_one.sql` > **Run**.
+   This builds everything and removes the sample entries, so the project starts
+   with no doctors listed, no holidays, and only the two confirmed fees
+   (Skin consultation Rs. 300, Follow-up consultation Rs. 200).
 2. New query > paste `supabase/002b_first_admin.sql` (with the real
    administrator's email in it) > **Run**.
+3. Add the front-desk registration function: Step 2 of `DESK-REGISTRATION-GUIDE.md`.
 
 ### 2.3 Sign-in settings
 
@@ -115,11 +119,13 @@ keys and a webhook pointing at the new project's address.
 On the live site:
 
 1. **Sign in > Clinic staff > Activate**, with the administrator's email.
-2. **Staff accounts:** invite a second administrator, and each doctor, choosing
+2. **Doctors > Add a doctor**, for each doctor: real name, qualification,
+   registration number, photo. Do this before inviting them, so you can pick
+   their listing in the invitation.
+3. **Staff accounts:** invite a second administrator, and each doctor, choosing
    the doctor's listing as you invite them.
-3. **Doctors:** real names, qualifications and registration numbers.
-4. **Services and fees**, **Hours and holidays** (remove the sample holiday),
-   **Clinic details** (logo, email).
+4. **Services and fees** (add the clinic's real procedures and prices),
+   **Hours and holidays** (add the real holidays), **Clinic details** (logo, email).
 
 ## Part 3: go-live checklist
 
@@ -137,6 +143,7 @@ Do not enter a real patient until every box is ticked.
 - [ ] The test numbers box in Authentication > Phone is empty.
 
 **A full dry run, with staff playing the patient (no real patient yet)**
+- [ ] Register a patient at the desk (a staff member's own number).
 - [ ] Book, reschedule and cancel an appointment.
 - [ ] Doctor: consultation note, prescription (draft, approve), treatment plan.
 - [ ] Photo: consent, upload a photo of an object, share, open, delete.
