@@ -106,8 +106,6 @@ The clinic's address, phone numbers and hours are real. These are placeholders:
 
 Until the admin portal exists (Stage 3), edit these in Supabase > Table Editor.
 
-## Coming next
+## Stage 2
 
-Stage 2: patient sign-in with mobile OTP, staff sign-in with email and password,
-roles, and the first role-based security rules. Deployment to a public web
-address is covered in Stage 9, after the full security test.
+Accounts and roles are set up with the steps in `STAGE2-GUIDE.md`.

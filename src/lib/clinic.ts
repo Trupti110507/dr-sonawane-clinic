@@ -109,7 +109,10 @@ export async function loadClinic(): Promise<ClinicData> {
     supabase.from('clinic_settings').select('*').single(),
     supabase.from('working_hours').select('*').order('weekday'),
     supabase.from('services').select('*').order('sort_order'),
-    supabase.from('doctors').select('*').order('sort_order'),
+    supabase
+      .from('doctors')
+      .select('id, full_name, qualification, specialities, consultation_fee_inr')
+      .order('sort_order'),
   ]);
 
   const failed = [settings, hours, services, doctors].find((r) => r.error);

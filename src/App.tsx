@@ -3,7 +3,17 @@ import { Route, Routes } from 'react-router-dom';
 import { loadClinic, type ClinicData } from './lib/clinic';
 import Welcome from './pages/Welcome';
 import ComingSoon from './pages/ComingSoon';
+import SignIn from './pages/SignIn';
+import StaffActivate from './pages/StaffActivate';
+import ResetPassword from './pages/ResetPassword';
+import PatientWelcome from './pages/portal/PatientWelcome';
+import PatientHome from './pages/portal/PatientHome';
+import PatientProfile from './pages/portal/PatientProfile';
+import DoctorHome from './pages/portal/DoctorHome';
+import AdminHome from './pages/portal/AdminHome';
+import AdminStaff from './pages/portal/AdminStaff';
 import SiteHeader from './components/SiteHeader';
+import RequireRole from './components/RequireRole';
 
 type State =
   | { status: 'loading' }
@@ -71,10 +81,23 @@ export default function App() {
           path="/book"
           element={<ComingSoon title="Online booking" stage="Stage 4" settings={clinic.settings} />}
         />
-        <Route
-          path="/sign-in"
-          element={<ComingSoon title="Sign in" stage="Stage 2" settings={clinic.settings} />}
-        />
+        {/* Accounts */}
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/staff/activate" element={<StaffActivate />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* Patient portal */}
+        <Route path="/patient/welcome" element={<RequireRole role="patient"><PatientWelcome clinicName={clinic.settings.name} /></RequireRole>} />
+        <Route path="/patient" element={<RequireRole role="patient"><PatientHome settings={clinic.settings} /></RequireRole>} />
+        <Route path="/patient/profile" element={<RequireRole role="patient"><PatientProfile /></RequireRole>} />
+
+        {/* Doctor portal */}
+        <Route path="/doctor" element={<RequireRole role="doctor"><DoctorHome /></RequireRole>} />
+
+        {/* Admin portal */}
+        <Route path="/admin" element={<RequireRole role="admin"><AdminHome /></RequireRole>} />
+        <Route path="/admin/staff" element={<RequireRole role="admin"><AdminStaff /></RequireRole>} />
+
         <Route
           path="*"
           element={<ComingSoon title="Page not found" stage={null} settings={clinic.settings} />}
