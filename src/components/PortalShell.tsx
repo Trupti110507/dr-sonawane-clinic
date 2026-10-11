@@ -31,11 +31,18 @@ export default function PortalShell({ label, links, children }: { label: string;
 
 export const PATIENT_LINKS: PortalLink[] = [
   { to: '/patient', label: 'Home' },
+  { to: '/patient/appointments', label: 'My appointments' },
   { to: '/patient/profile', label: 'My profile' },
 ];
-export const DOCTOR_LINKS: PortalLink[] = [{ to: '/doctor', label: 'Today' }];
+export const DOCTOR_LINKS: PortalLink[] = [
+  { to: '/doctor', label: 'Today' },
+  { to: '/doctor/calendar', label: 'Calendar' },
+  { to: '/doctor/time-off', label: 'My time off' },
+];
 export const ADMIN_LINKS: PortalLink[] = [
   { to: '/admin', label: 'Dashboard' },
+  { to: '/admin/appointments', label: 'Appointments' },
+  { to: '/admin/time-off', label: 'Doctor leave' },
   { to: '/admin/clinic', label: 'Clinic details' },
   { to: '/admin/hours', label: 'Hours and holidays' },
   { to: '/admin/services', label: 'Services and fees' },

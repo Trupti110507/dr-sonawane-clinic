@@ -17,6 +17,12 @@ import AdminHours from './pages/portal/AdminHours';
 import AdminServices from './pages/portal/AdminServices';
 import AdminDoctors from './pages/portal/AdminDoctors';
 import AdminPatients from './pages/portal/AdminPatients';
+import AdminAppointments from './pages/portal/AdminAppointments';
+import AdminTimeOff from './pages/portal/AdminTimeOff';
+import PatientAppointments from './pages/portal/PatientAppointments';
+import DoctorCalendar from './pages/portal/DoctorCalendar';
+import DoctorTimeOff from './pages/portal/DoctorTimeOff';
+import Book from './pages/Book';
 import SiteHeader from './components/SiteHeader';
 import RequireRole from './components/RequireRole';
 
@@ -88,10 +94,7 @@ export default function App() {
       <SiteHeader settings={clinic.settings} />
       <Routes>
         <Route path="/" element={<Welcome clinic={clinic} />} />
-        <Route
-          path="/book"
-          element={<ComingSoon title="Online booking" stage="Stage 4" settings={clinic.settings} />}
-        />
+        <Route path="/book" element={<Book clinic={clinic} />} />
         {/* Accounts */}
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/staff/activate" element={<StaffActivate />} />
@@ -99,14 +102,19 @@ export default function App() {
 
         {/* Patient portal */}
         <Route path="/patient/welcome" element={<RequireRole role="patient"><PatientWelcome clinicName={clinic.settings.name} /></RequireRole>} />
-        <Route path="/patient" element={<RequireRole role="patient"><PatientHome settings={clinic.settings} /></RequireRole>} />
+        <Route path="/patient" element={<RequireRole role="patient"><PatientHome clinic={clinic} /></RequireRole>} />
+        <Route path="/patient/appointments" element={<RequireRole role="patient"><PatientAppointments clinic={clinic} /></RequireRole>} />
         <Route path="/patient/profile" element={<RequireRole role="patient"><PatientProfile /></RequireRole>} />
 
         {/* Doctor portal */}
-        <Route path="/doctor" element={<RequireRole role="doctor"><DoctorHome /></RequireRole>} />
+        <Route path="/doctor" element={<RequireRole role="doctor"><DoctorHome clinic={clinic} /></RequireRole>} />
+        <Route path="/doctor/calendar" element={<RequireRole role="doctor"><DoctorCalendar clinic={clinic} /></RequireRole>} />
+        <Route path="/doctor/time-off" element={<RequireRole role="doctor"><DoctorTimeOff clinic={clinic} /></RequireRole>} />
 
         {/* Admin portal */}
         <Route path="/admin" element={<RequireRole role="admin"><AdminHome /></RequireRole>} />
+        <Route path="/admin/appointments" element={<RequireRole role="admin"><AdminAppointments clinic={clinic} /></RequireRole>} />
+        <Route path="/admin/time-off" element={<RequireRole role="admin"><AdminTimeOff clinic={clinic} /></RequireRole>} />
         <Route path="/admin/staff" element={<RequireRole role="admin"><AdminStaff /></RequireRole>} />
         <Route path="/admin/clinic" element={<RequireRole role="admin"><AdminClinic settings={clinic.settings} onChanged={refresh} /></RequireRole>} />
         <Route path="/admin/hours" element={<RequireRole role="admin"><AdminHours hours={clinic.hours} holidays={clinic.holidays} timezone={clinic.settings.timezone} onChanged={refresh} /></RequireRole>} />

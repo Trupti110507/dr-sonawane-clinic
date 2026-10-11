@@ -114,3 +114,8 @@ Accounts and roles are set up with the steps in `STAGE2-GUIDE.md`.
 
 The admin screens for clinic details, hours, holidays, services, doctors and
 patients are set up with the steps in `STAGE3-GUIDE.md`.
+
+## Stage 4
+
+Online booking, calendars and doctor leave are set up with the steps in
+`STAGE4-GUIDE.md`.

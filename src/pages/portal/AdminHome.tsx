@@ -4,6 +4,8 @@ import { useAuth } from '../../lib/auth';
 import { pageTitle } from '../../lib/ui';
 
 const AREAS = [
+  { to: '/admin/appointments', title: 'Appointments', text: 'See each day, book for a patient, move, cancel or mark attendance.' },
+  { to: '/admin/time-off', title: 'Doctor leave', text: 'Block days or hours when a doctor is away.' },
   { to: '/admin/clinic', title: 'Clinic details', text: 'Name, headings, address, phone numbers, logo, colours and appointment length.' },
   { to: '/admin/hours', title: 'Hours and holidays', text: 'Opening times for each day, and the days the clinic is closed.' },
   { to: '/admin/services', title: 'Services and fees', text: 'Add, reprice or retire consultations and procedures.' },
@@ -28,7 +30,7 @@ export default function AdminHome() {
         ))}
       </ul>
       <p className="mt-6 text-[0.95rem] text-muted">
-        Appointments, payments and reports are added here in the coming build stages.
+        Payments and reports are added here in the coming build stages.
       </p>
     </PortalShell>
   );
