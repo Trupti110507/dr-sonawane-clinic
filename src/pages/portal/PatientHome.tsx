@@ -75,6 +75,13 @@ export default function PatientHome({ clinic }: { clinic: ClinicData }) {
           </div>
         </section>
         <section className={card}>
+          <h2 className="font-display text-2xl">Progress photos</h2>
+          <p className="mt-2 text-muted">Give or withdraw your consent to clinical photographs, and see the photos your doctor has shared.</p>
+          <Link to="/patient/photos" className={`${btnOutline} mt-5`}>
+            Open photos
+          </Link>
+        </section>
+        <section className={card}>
           <h2 className="font-display text-2xl">Your details</h2>
           <p className="mt-2 text-muted">Keep your date of birth, address and emergency contact up to date.</p>
           <Link to="/patient/profile" className={`${btnOutline} mt-5`}>
@@ -88,7 +95,7 @@ export default function PatientHome({ clinic }: { clinic: ClinicData }) {
         </Link>
       )}
       <p className="mt-6 text-[0.95rem] text-muted">
-        Progress photos and receipts will appear here as the clinic switches them on.
+        Receipts will appear here as the clinic switches them on.
       </p>
     </PortalShell>
   );

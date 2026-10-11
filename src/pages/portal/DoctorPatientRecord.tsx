@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import DoctorPhotos from '../../components/DoctorPhotos';
 import DoctorPlans from '../../components/DoctorPlans';
 import DoctorPrescriptions from '../../components/DoctorPrescriptions';
 import Field, { Notice } from '../../components/Field';
@@ -185,6 +186,7 @@ export default function DoctorPatientRecord({ clinic }: { clinic: ClinicData }) 
         myDoctorId={record.my_doctor_id}
         onChanged={() => { setMessage(''); void load(); }}
       />
+      <DoctorPhotos patientId={patient.id} patientName={patient.full_name} today={today} timezone={tz} />
     </PortalShell>
   );
 }

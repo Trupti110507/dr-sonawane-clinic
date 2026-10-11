@@ -128,3 +128,7 @@ steps in `STAGE5-GUIDE.md`.
 ## Stage 6
 
 Prescriptions and treatment plans are set up with the steps in `STAGE6-GUIDE.md`.
+
+## Stage 7
+
+Progress photos and photo consent are set up with the steps in `STAGE7-GUIDE.md`.

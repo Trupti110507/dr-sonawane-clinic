@@ -29,6 +29,7 @@ import PatientVisits from './pages/portal/PatientVisits';
 import AdminAudit from './pages/portal/AdminAudit';
 import PatientPrescriptions from './pages/portal/PatientPrescriptions';
 import PatientTreatment from './pages/portal/PatientTreatment';
+import PatientPhotos from './pages/portal/PatientPhotos';
 import SiteHeader from './components/SiteHeader';
 import RequireRole from './components/RequireRole';
 
@@ -113,6 +114,7 @@ export default function App() {
         <Route path="/patient/visits" element={<RequireRole role="patient"><PatientVisits clinic={clinic} /></RequireRole>} />
         <Route path="/patient/prescriptions" element={<RequireRole role="patient"><PatientPrescriptions clinic={clinic} /></RequireRole>} />
         <Route path="/patient/treatment" element={<RequireRole role="patient"><PatientTreatment /></RequireRole>} />
+        <Route path="/patient/photos" element={<RequireRole role="patient"><PatientPhotos clinic={clinic} /></RequireRole>} />
         <Route path="/patient/profile" element={<RequireRole role="patient"><PatientProfile /></RequireRole>} />
 
         {/* Doctor portal */}

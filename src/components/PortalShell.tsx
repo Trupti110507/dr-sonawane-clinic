@@ -42,6 +42,7 @@ export const PATIENT_LINKS: PortalLink[] = [
   { to: '/patient/visits', label: 'My visits' },
   { to: '/patient/prescriptions', label: 'Prescriptions' },
   { to: '/patient/treatment', label: 'Treatment plans' },
+  { to: '/patient/photos', label: 'Photos' },
   { to: '/patient/profile', label: 'My profile' },
 ];
 export const DOCTOR_LINKS: PortalLink[] = [
