@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import {
   formatInr,
   formatTime,
+  groupWeek,
   sessionLabel,
-  sessionsOf,
   telHref,
   todayStatus,
   weekdayName,
@@ -43,16 +43,10 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${settings.name}, ${fullAddress}`,
   )}`;
-  // Show Monday first, Sunday last.
-  const week = [...hours].sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7));
   const categories = [...new Set(services.map((s) => s.category))];
   const phones = [settings.phone_primary, settings.phone_secondary].filter(
     (p): p is string => Boolean(p),
   );
-  const headline = settings.tagline
-    ? `${settings.tagline} in ${settings.city}`
-    : settings.name;
-
   return (
     // Bottom padding on phones leaves room for the fixed Call / Book bar.
     <main id="main" className="pb-20 md:pb-0">
@@ -60,13 +54,17 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
       <section className="bg-sage-50">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 md:py-16 lg:grid-cols-[1.15fr_1fr] lg:gap-16 lg:py-20">
           <div>
-            <h1 className="font-display text-[2.5rem] leading-[1.12] text-ink sm:text-5xl lg:text-[3.5rem]">
-              {headline}
+            <h1 className="font-display text-[2.75rem] leading-[1.1] text-ink sm:text-6xl lg:text-[4rem]">
+              {settings.name}
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">
-              {settings.name} treats skin and hair concerns. Check today's hours and fees
-              here, then book a visit or call us.
-            </p>
+            {settings.tagline && (
+              <p className="mt-4 font-display text-2xl leading-snug text-sage-700 sm:text-[1.75rem]">
+                {settings.tagline}
+              </p>
+            )}
+            {settings.subtitle && (
+              <p className="mt-2 text-lg font-medium text-ink sm:text-xl">{settings.subtitle}</p>
+            )}
             <p className="mt-5 flex items-start gap-2 text-ink">
               <span className="mt-0.5 text-sage-600">
                 <PinIcon />
@@ -130,7 +128,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
               href="#visit"
               className="mt-6 inline-flex min-h-11 items-center font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white"
             >
-              See hours for the whole week
+              See all clinic hours
             </a>
           </aside>
         </div>
@@ -222,49 +220,46 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
           Hours and location
         </h2>
         <div className="mt-10 grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
-          <table className="w-full border-collapse text-left">
-            <caption className="sr-only">Clinic hours for each day of the week</caption>
-            <thead>
-              <tr className="border-b border-line text-[0.95rem] text-muted">
-                <th scope="col" className="py-2 pl-3 font-medium">Day</th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {week.map((day) => {
-                const isToday = day.weekday === status.weekday;
-                return (
-                  <tr
-                    key={day.weekday}
-                    className={`border-b border-line align-top ${isToday ? 'bg-sage-50' : ''}`}
-                  >
-                    <th scope="row" className="py-3 pl-3 font-semibold text-ink">
-                      {weekdayName(day.weekday)}
-                      {isToday && (
-                        <span className="ml-2 rounded-full bg-lavender-200 px-2 py-0.5 text-sm font-semibold text-lavender-700">
-                          Today
-                        </span>
-                      )}
-                    </th>
-                    <td className={`py-3 pr-3 text-right ${day.is_closed ? 'text-muted' : 'text-ink'}`}>
-                      {day.is_closed
-                        ? 'Closed'
-                        : sessionsOf(day).map(([from, to]) => (
-                            <span key={from} className="block whitespace-nowrap">
-                              {formatTime(from)} to {formatTime(to)}
-                            </span>
-                          ))}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* One block per run of days that share the same hours */}
+          <div className="self-start border-t border-line">
+            {groupWeek(hours).map((group) => {
+              const isToday = group.weekdays.includes(status.weekday);
+              return (
+                <div
+                  key={group.label}
+                  className={`border-b border-line px-4 py-5 ${isToday ? 'bg-sage-50' : ''}`}
+                >
+                  <h3 className="flex flex-wrap items-center gap-2 text-[1.05rem] font-bold text-ink">
+                    {group.label}
+                    {isToday && (
+                      <span className="rounded-full bg-lavender-200 px-2 py-0.5 text-sm font-semibold text-lavender-700">
+                        Today
+                      </span>
+                    )}
+                  </h3>
+                  {group.sessions.length === 0 ? (
+                    <p className="mt-1 text-muted">Closed</p>
+                  ) : (
+                    <dl className="mt-2 space-y-1">
+                      {group.sessions.map(([from, to]) => (
+                        <div key={from} className="flex justify-between gap-4">
+                          <dt className="text-muted">{sessionLabel(from)}</dt>
+                          <dd className="font-semibold text-ink">
+                            {formatTime(from)} to {formatTime(to)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           <div>
             <h3 className="font-display text-2xl text-ink">Find us</h3>
             <address className="mt-3 text-[1.05rem] not-italic leading-relaxed text-ink">
-              {settings.name}
+              {[settings.name, settings.subtitle].filter(Boolean).join(', ')}
               <br />
               {settings.address}
               <br />
@@ -296,6 +291,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
           <div>
             <p className="font-display text-2xl">{settings.name}</p>
             {settings.tagline && <p className="mt-1 text-sage-200">{settings.tagline}</p>}
+            {settings.subtitle && <p className="text-sage-200">{settings.subtitle}</p>}
           </div>
           <address className="not-italic leading-relaxed text-sage-200">
             {settings.address}

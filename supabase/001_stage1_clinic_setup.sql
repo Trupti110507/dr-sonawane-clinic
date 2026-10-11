@@ -8,7 +8,8 @@
 create table if not exists public.clinic_settings (
   id                  boolean primary key default true check (id),  -- only "true" allowed => one row
   name                text    not null,
-  tagline             text,
+  tagline             text,                                   -- first line under the name
+  subtitle            text,                                   -- second line under the name
   logo_path           text,                                   -- file in Supabase Storage (added later)
   address             text    not null,
   city                text    not null,
@@ -22,6 +23,9 @@ create table if not exists public.clinic_settings (
   booking_window_days integer not null default 30  check (booking_window_days between 1 and 365),
   updated_at          timestamptz not null default now()
 );
+
+-- Adds the column if the table was created by an earlier version of this file.
+alter table public.clinic_settings add column if not exists subtitle text;
 
 -- ---------- 2. working_hours: one row per weekday ----------------------
 -- weekday: 0 = Sunday, 1 = Monday ... 6 = Saturday
@@ -118,10 +122,11 @@ grant select on public.clinic_settings, public.working_hours, public.holidays,
 -- Confirmed: consultation fee Rs. 300, follow-up fee Rs. 200.
 -- SAMPLE (replace before go-live): doctor names, procedures and their prices, holidays.
 -- =====================================================================
-insert into public.clinic_settings (id, name, tagline, address, city, phone_primary, phone_secondary)
+insert into public.clinic_settings (id, name, tagline, subtitle, address, city, phone_primary, phone_secondary)
 values (true,
-        'Dr. Sonawane Skin Clinic',
-        'Dermatology and skin care',
+        'Dr. Sonawane',
+        'Dermatologist and Venereologist',
+        'Skin, Hair, Cosmetic & Laser Clinic',
         'Besides Gajanan Maharaj Mandir, Vinchur Yeola Road',
         'Yeola',
         '+91 8928774097',
@@ -130,12 +135,12 @@ on conflict (id) do nothing;
 
 insert into public.working_hours (weekday, is_closed, opens_at, closes_at, break_start, break_end) values
   (0, true,  null,    null,    null,    null),      -- Sunday (assumed closed)
-  (1, false, '09:00', '22:00', '15:00', '17:30'),
-  (2, false, '09:00', '22:00', '15:00', '17:30'),
-  (3, false, '09:00', '22:00', '15:00', '17:30'),
-  (4, false, '09:00', '22:00', '15:00', '17:30'),
-  (5, false, '09:00', '22:00', '15:00', '17:30'),
-  (6, false, '09:00', '22:00', '15:00', '17:30')
+  (1, false, '11:00', '21:00', '15:00', '17:30'),
+  (2, false, '11:00', '21:00', '15:00', '17:30'),
+  (3, false, '11:00', '21:00', '15:00', '17:30'),
+  (4, false, '11:00', '21:00', '15:00', '17:30'),
+  (5, false, '11:00', '21:00', '15:00', '17:30'),
+  (6, false, '11:00', '21:00', '15:00', '17:30')
 on conflict (weekday) do nothing;
 
 -- Doctor names are not confirmed yet: placeholders. Consultation fee Rs. 300 is confirmed.

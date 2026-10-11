@@ -97,7 +97,7 @@ Tick each one before we move to Stage 2.
 
 The clinic's address, phone numbers and hours are real. These are placeholders:
 
-- **Clinic name.** Set to "Dr. Sonawane Skin Clinic". Edit `name` in `clinic_settings`.
+- **Clinic name and subheadings.** Edit `name`, `tagline` and `subtitle` in `clinic_settings`.
 - **Working days.** Assumed Monday to Saturday, Sunday closed. Edit `working_hours`.
 - **Doctors.** Names and qualifications are placeholders (not confirmed yet). Edit `doctors`.
 - **Procedures and their prices.** Sample values. Edit `services`. The consultation

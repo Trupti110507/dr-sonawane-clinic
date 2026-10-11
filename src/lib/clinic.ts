@@ -2,7 +2,10 @@ import { supabase } from './supabase';
 
 export interface ClinicSettings {
   name: string;
+  /** First line under the name, e.g. the doctor's speciality */
   tagline: string | null;
+  /** Second line under the name, e.g. what the clinic offers */
+  subtitle?: string | null;
   logo_path: string | null;
   address: string;
   city: string;
@@ -57,16 +60,17 @@ export interface ClinicData {
 const openDay = (weekday: number): WorkingDay => ({
   weekday,
   is_closed: false,
-  opens_at: '09:00:00',
-  closes_at: '22:00:00',
+  opens_at: '11:00:00',
+  closes_at: '21:00:00',
   break_start: '15:00:00',
   break_end: '17:30:00',
 });
 
 const SAMPLE: Omit<ClinicData, 'source'> = {
   settings: {
-    name: 'Dr. Sonawane Skin Clinic',
-    tagline: 'Dermatology and skin care',
+    name: 'Dr. Sonawane',
+    tagline: 'Dermatologist and Venereologist',
+    subtitle: 'Skin, Hair, Cosmetic & Laser Clinic',
     logo_path: null,
     address: 'Besides Gajanan Maharaj Mandir, Vinchur Yeola Road',
     city: 'Yeola',
@@ -201,12 +205,40 @@ const toMinutes = (t: string) => {
   return h * 60 + m;
 };
 
-/** "Morning", "Afternoon" or "Evening", judged by when a session starts. */
+/** Session name: "Morning" if it starts before noon, otherwise "Afternoon". */
 export function sessionLabel(from: string): string {
-  const start = toMinutes(from);
-  if (start < 12 * 60) return 'Morning';
-  if (start < 17 * 60) return 'Afternoon';
-  return 'Evening';
+  return toMinutes(from) < 12 * 60 ? 'Morning' : 'Afternoon';
+}
+
+export interface DayGroup {
+  /** e.g. "Monday to Saturday" or "Sunday" */
+  label: string;
+  weekdays: number[];
+  sessions: [string, string][];
+}
+
+/**
+ * Folds the week into rows of neighbouring days that share the same hours,
+ * Monday first: "Monday to Saturday" + "Sunday" instead of seven lines.
+ */
+export function groupWeek(hours: WorkingDay[]): DayGroup[] {
+  const week = [...hours].sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7));
+  const groups: DayGroup[] = [];
+  for (const day of week) {
+    const sessions = sessionsOf(day);
+    const last = groups[groups.length - 1];
+    if (last && JSON.stringify(last.sessions) === JSON.stringify(sessions)) {
+      last.weekdays.push(day.weekday);
+    } else {
+      groups.push({ label: '', weekdays: [day.weekday], sessions });
+    }
+  }
+  for (const g of groups) {
+    const first = weekdayName(g.weekdays[0]);
+    const end = weekdayName(g.weekdays[g.weekdays.length - 1]);
+    g.label = g.weekdays.length === 1 ? first : `${first} to ${end}`;
+  }
+  return groups;
 }
 
 export interface TodayStatus {

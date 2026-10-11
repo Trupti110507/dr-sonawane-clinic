@@ -20,7 +20,7 @@ export default function App() {
         const root = document.documentElement.style;
         root.setProperty('--brand-primary', clinic.settings.primary_color);
         root.setProperty('--brand-accent', clinic.settings.accent_color);
-        document.title = clinic.settings.name;
+        document.title = [clinic.settings.name, clinic.settings.subtitle].filter(Boolean).join(' | ');
         setState({ status: 'ready', clinic });
       })
       .catch((e: Error) => setState({ status: 'error', message: e.message }));
