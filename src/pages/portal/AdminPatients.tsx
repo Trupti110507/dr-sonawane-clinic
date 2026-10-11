@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useId, useState } from 'react';
+import CareAccess from '../../components/CareAccess';
 import { Notice } from '../../components/Field';
 import PortalShell, { ADMIN_LINKS } from '../../components/PortalShell';
 import { friendlyError } from '../../lib/auth';
+import type { Doctor } from '../../lib/clinic';
 import { supabase } from '../../lib/supabase';
 import { btnDanger, btnSmall, inputBox, pageTitle } from '../../lib/ui';
 
@@ -18,12 +20,13 @@ const shortDate = (iso: string) => new Intl.DateTimeFormat('en-IN', { day: 'nume
 const showPhone = (p: string | null) => (p && /^91\d{10}$/.test(p) ? `+91 ${p.slice(2, 7)} ${p.slice(7)}` : p ? `+${p}` : 'No number');
 
 /** Registered patients: contact details and account status only. No medical information. */
-export default function AdminPatients() {
+export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
   const searchId = useId();
   const [rows, setRows] = useState<PatientRow[] | null>(null);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState('');
+  const [accessFor, setAccessFor] = useState('');
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -85,7 +88,8 @@ export default function AdminPatients() {
           </p>
           <ul className="mt-2 max-w-3xl divide-y divide-line border-y border-line">
             {shown.map((r) => (
-              <li key={r.user_id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <li key={r.user_id} className="py-4">
+               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-semibold text-ink">
                     {r.full_name || 'Name not given yet'}
@@ -95,6 +99,10 @@ export default function AdminPatients() {
                     {showPhone(r.phone)}, registered {shortDate(r.created_at)}
                   </p>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                <button className={btnSmall} aria-expanded={accessFor === r.user_id} aria-label={`Doctor access for ${r.full_name || 'this patient'}`} onClick={() => setAccessFor(accessFor === r.user_id ? '' : r.user_id)}>
+                  Doctor access
+                </button>
                 {!r.is_active ? (
                   <button className={btnSmall} onClick={() => void setActive(r.user_id, true)}>
                     Activate again
@@ -113,6 +121,9 @@ export default function AdminPatients() {
                     Deactivate
                   </button>
                 )}
+                </div>
+               </div>
+                {accessFor === r.user_id && <CareAccess patientId={r.user_id} patientName={r.full_name} doctors={doctors} />}
               </li>
             ))}
           </ul>

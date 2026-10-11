@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { STATUS_LABEL, STATUS_LOOK, dayOf, showPhone, timeOf, type Appointment } from '../lib/appointments';
 import { friendlyError, type Role } from '../lib/auth';
 import { formatDate, type ClinicData } from '../lib/clinic';
@@ -83,8 +84,13 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
           {a.status === 'cancelled' && a.cancel_reason && <p className="text-[0.95rem] text-muted">Reason: {a.cancel_reason}</p>}
         </div>
 
-        {mode === 'idle' && (canChange || canClose || (onFollowUp && a.status === 'completed')) && (
+        {mode === 'idle' && (canChange || canClose || viewer === 'doctor' || (onFollowUp && a.status === 'completed')) && (
           <div className="flex shrink-0 flex-wrap gap-2">
+            {viewer === 'doctor' && (
+              <Link className={btnSmall} to={`/doctor/patients/${a.patient_id}${a.status === 'booked' || a.status === 'completed' ? `?appointment=${a.id}` : ''}`}>
+                {a.status === 'booked' ? 'Start consultation' : 'Open record'}
+              </Link>
+            )}
             {canClose && (
               <>
                 <button className={btnSmall} disabled={busy} onClick={() => void run('set_appointment_outcome', { p_id: a.id, p_status: 'completed' })}>

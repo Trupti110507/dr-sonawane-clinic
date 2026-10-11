@@ -10,8 +10,9 @@ const AREAS = [
   { to: '/admin/hours', title: 'Hours and holidays', text: 'Opening times for each day, and the days the clinic is closed.' },
   { to: '/admin/services', title: 'Services and fees', text: 'Add, reprice or retire consultations and procedures.' },
   { to: '/admin/doctors', title: 'Doctors', text: 'Names, qualifications, fees and photos shown on the website.' },
-  { to: '/admin/patients', title: 'Patients', text: 'Registered patients, with contact details and account status.' },
+  { to: '/admin/patients', title: 'Patients', text: 'Registered patients, account status, and which doctors may open their record.' },
   { to: '/admin/staff', title: 'Staff accounts', text: 'Invite doctors and administrators, and switch accounts on or off.' },
+  { to: '/admin/audit', title: 'Access log', text: 'Who opened or changed which patient record, and when.' },
 ];
 
 export default function AdminHome() {
