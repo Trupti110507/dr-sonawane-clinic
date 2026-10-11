@@ -60,3 +60,35 @@ body {
   outline-offset: 3px;
   border-radius: 8px;
 }
+
+/*
+  Printing a prescription: only the sheet marked "print-sheet" goes on paper.
+  The button adds that mark to one prescription just before printing.
+*/
+@page {
+  margin: 14mm;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-sheet,
+  .print-sheet * {
+    visibility: visible;
+  }
+  .print-sheet {
+    position: absolute;
+    inset: 0 0 auto 0;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+  .print-sheet .print-only {
+    display: block;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+.print-only {
+  display: none;
+}

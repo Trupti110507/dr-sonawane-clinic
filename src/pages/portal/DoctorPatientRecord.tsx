@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import DoctorPlans from '../../components/DoctorPlans';
+import DoctorPrescriptions from '../../components/DoctorPrescriptions';
 import Field, { Notice } from '../../components/Field';
 import PortalShell, { DOCTOR_LINKS } from '../../components/PortalShell';
 import { addDays, dayOf, showPhone, timeOf } from '../../lib/appointments';
@@ -167,6 +169,22 @@ export default function DoctorPatientRecord({ clinic }: { clinic: ClinicData }) 
           </ul>
         )}
       </section>
+
+      <DoctorPrescriptions
+        patientId={patient.id}
+        patientName={patient.full_name}
+        allergies={profile?.allergies ?? null}
+        prescriptions={record.prescriptions ?? []}
+        myDoctorId={record.my_doctor_id}
+        settings={clinic.settings}
+        onChanged={() => { setMessage(''); void load(); }}
+      />
+      <DoctorPlans
+        patientId={patient.id}
+        plans={record.treatment_plans ?? []}
+        myDoctorId={record.my_doctor_id}
+        onChanged={() => { setMessage(''); void load(); }}
+      />
     </PortalShell>
   );
 }

@@ -38,7 +38,54 @@ export interface PatientRecord {
   /** The signed-in doctor's own listing id: notes with this doctor_id are theirs to edit */
   my_doctor_id: string;
   visits: Visit[];
+  prescriptions: Prescription[];
+  treatment_plans: TreatmentPlan[];
 }
+
+/** One medicine line. Every word is typed by the doctor. */
+export interface PrescriptionItem {
+  medicine_name: string;
+  dosage: string | null;
+  frequency: string | null;
+  duration: string | null;
+  instructions: string | null;
+}
+
+export type PrescriptionStatus = 'draft' | 'approved' | 'withdrawn';
+
+export interface Prescription {
+  id: string;
+  status: PrescriptionStatus;
+  created_at: string;
+  approved_at: string | null;
+  withdrawn_at?: string | null;
+  withdraw_reason?: string | null;
+  general_instructions: string | null;
+  doctor_id: string;
+  doctor_name: string;
+  doctor_qualification: string | null;
+  doctor_registration_no: string | null;
+  items: PrescriptionItem[];
+}
+
+export type PlanStatus = 'active' | 'completed' | 'stopped';
+
+export interface TreatmentPlan {
+  id: string;
+  title: string;
+  doctor_id?: string;
+  doctor_name: string;
+  /** Shown to the patient */
+  patient_instructions: string | null;
+  /** Doctors only; never sent to the patient */
+  clinical_notes?: string | null;
+  total_sessions: number;
+  sessions_done: number;
+  status: PlanStatus;
+  started_on: string;
+}
+
+export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = { active: 'In progress', completed: 'Completed', stopped: 'Stopped' };
 
 /** Whole years between a date of birth and today. */
 export function ageFrom(dateOfBirth: string | null, today: string): number | null {

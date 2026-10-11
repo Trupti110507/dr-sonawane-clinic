@@ -25,6 +25,8 @@ const WHAT: Record<string, string> = {
   patient_clinical_profile: 'the medical summary',
   appointments: 'an appointment',
   care_relationships: 'the record, for a doctor',
+  prescriptions: 'a prescription',
+  treatment_plans: 'a treatment plan',
 };
 
 /** Who opened or changed which patient's record. It shows that something happened, never the medical wording. */

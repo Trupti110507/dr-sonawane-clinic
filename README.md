@@ -124,3 +124,7 @@ Online booking, calendars and doctor leave are set up with the steps in
 
 Patient records, consultation notes and the access log are set up with the
 steps in `STAGE5-GUIDE.md`.
+
+## Stage 6
+
+Prescriptions and treatment plans are set up with the steps in `STAGE6-GUIDE.md`.

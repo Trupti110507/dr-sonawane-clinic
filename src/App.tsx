@@ -27,6 +27,8 @@ import DoctorPatients from './pages/portal/DoctorPatients';
 import DoctorPatientRecord from './pages/portal/DoctorPatientRecord';
 import PatientVisits from './pages/portal/PatientVisits';
 import AdminAudit from './pages/portal/AdminAudit';
+import PatientPrescriptions from './pages/portal/PatientPrescriptions';
+import PatientTreatment from './pages/portal/PatientTreatment';
 import SiteHeader from './components/SiteHeader';
 import RequireRole from './components/RequireRole';
 
@@ -109,6 +111,8 @@ export default function App() {
         <Route path="/patient" element={<RequireRole role="patient"><PatientHome clinic={clinic} /></RequireRole>} />
         <Route path="/patient/appointments" element={<RequireRole role="patient"><PatientAppointments clinic={clinic} /></RequireRole>} />
         <Route path="/patient/visits" element={<RequireRole role="patient"><PatientVisits clinic={clinic} /></RequireRole>} />
+        <Route path="/patient/prescriptions" element={<RequireRole role="patient"><PatientPrescriptions clinic={clinic} /></RequireRole>} />
+        <Route path="/patient/treatment" element={<RequireRole role="patient"><PatientTreatment /></RequireRole>} />
         <Route path="/patient/profile" element={<RequireRole role="patient"><PatientProfile /></RequireRole>} />
 
         {/* Doctor portal */}
