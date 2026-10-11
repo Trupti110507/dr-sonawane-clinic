@@ -36,5 +36,10 @@ export const PATIENT_LINKS: PortalLink[] = [
 export const DOCTOR_LINKS: PortalLink[] = [{ to: '/doctor', label: 'Today' }];
 export const ADMIN_LINKS: PortalLink[] = [
   { to: '/admin', label: 'Dashboard' },
+  { to: '/admin/clinic', label: 'Clinic details' },
+  { to: '/admin/hours', label: 'Hours and holidays' },
+  { to: '/admin/services', label: 'Services and fees' },
+  { to: '/admin/doctors', label: 'Doctors' },
+  { to: '/admin/patients', label: 'Patients' },
   { to: '/admin/staff', label: 'Staff accounts' },
 ];

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { portalPath, useAuth } from '../lib/auth';
-import type { ClinicSettings } from '../lib/clinic';
+import { logoUrl, type ClinicSettings } from '../lib/clinic';
 
 const navLink =
   'inline-flex min-h-11 items-center rounded-full px-3 text-[0.95rem] font-medium text-ink hover:text-sage-700';
@@ -18,9 +18,9 @@ export default function SiteHeader({ settings }: { settings: ClinicSettings }) {
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-          {/* Clinic logo. To change it, replace the file public/logo.png */}
+          {/* Clinic logo: uploaded in Admin > Clinic details; falls back to public/logo.png */}
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-50 ring-1 ring-sage-200 sm:h-12 sm:w-12">
-            <img src="/logo.png" alt="" className="h-7 w-7 object-contain sm:h-8 sm:w-8" />
+            <img src={logoUrl(settings)} alt="" className="h-7 w-7 object-contain sm:h-8 sm:w-8" />
           </span>
           <span className="min-w-0">
             <span className="block font-display text-[1.05rem] leading-tight text-ink sm:text-xl">
@@ -61,7 +61,9 @@ export default function SiteHeader({ settings }: { settings: ClinicSettings }) {
             <button
               className={pillOutline}
               onClick={() => {
-                void signOut().then(() => navigate('/'));
+                // Leave the portal first, then sign out, so the visitor lands on the home page.
+                navigate('/');
+                void signOut();
               }}
             >
               Sign out

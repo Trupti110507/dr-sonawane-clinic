@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { loadClinic, type ClinicData } from './lib/clinic';
 import Welcome from './pages/Welcome';
@@ -12,6 +12,11 @@ import PatientProfile from './pages/portal/PatientProfile';
 import DoctorHome from './pages/portal/DoctorHome';
 import AdminHome from './pages/portal/AdminHome';
 import AdminStaff from './pages/portal/AdminStaff';
+import AdminClinic from './pages/portal/AdminClinic';
+import AdminHours from './pages/portal/AdminHours';
+import AdminServices from './pages/portal/AdminServices';
+import AdminDoctors from './pages/portal/AdminDoctors';
+import AdminPatients from './pages/portal/AdminPatients';
 import SiteHeader from './components/SiteHeader';
 import RequireRole from './components/RequireRole';
 
@@ -23,7 +28,9 @@ type State =
 export default function App() {
   const [state, setState] = useState<State>({ status: 'loading' });
 
-  useEffect(() => {
+  // Loads (or re-loads) the clinic's public details. Admin screens call
+  // this after saving, so every page shows the change straight away.
+  const refresh = useCallback(() => {
     loadClinic()
       .then((clinic) => {
         // Apply the clinic's saved brand colours and name to the whole app.
@@ -35,6 +42,10 @@ export default function App() {
       })
       .catch((e: Error) => setState({ status: 'error', message: e.message }));
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   if (state.status === 'loading') {
     return (
@@ -97,6 +108,11 @@ export default function App() {
         {/* Admin portal */}
         <Route path="/admin" element={<RequireRole role="admin"><AdminHome /></RequireRole>} />
         <Route path="/admin/staff" element={<RequireRole role="admin"><AdminStaff /></RequireRole>} />
+        <Route path="/admin/clinic" element={<RequireRole role="admin"><AdminClinic settings={clinic.settings} onChanged={refresh} /></RequireRole>} />
+        <Route path="/admin/hours" element={<RequireRole role="admin"><AdminHours hours={clinic.hours} holidays={clinic.holidays} timezone={clinic.settings.timezone} onChanged={refresh} /></RequireRole>} />
+        <Route path="/admin/services" element={<RequireRole role="admin"><AdminServices onChanged={refresh} /></RequireRole>} />
+        <Route path="/admin/doctors" element={<RequireRole role="admin"><AdminDoctors onChanged={refresh} /></RequireRole>} />
+        <Route path="/admin/patients" element={<RequireRole role="admin"><AdminPatients /></RequireRole>} />
 
         <Route
           path="*"

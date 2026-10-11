@@ -15,6 +15,10 @@ export interface ClinicSettings {
   primary_color: string;
   accent_color: string;
   timezone: string;
+  /** Length of one appointment slot, in minutes */
+  slot_minutes?: number;
+  /** How many days ahead patients may book */
+  booking_window_days?: number;
 }
 
 export interface WorkingDay {
@@ -41,6 +45,12 @@ export interface Doctor {
   qualification: string | null;
   specialities: string | null;
   consultation_fee_inr: number | null;
+  photo_path?: string | null;
+}
+
+export interface Holiday {
+  holiday_date: string; // "2026-11-08"
+  reason: string;
 }
 
 export interface ClinicData {
@@ -48,6 +58,7 @@ export interface ClinicData {
   hours: WorkingDay[];
   services: Service[];
   doctors: Doctor[];
+  holidays: Holiday[];
   /** "live" = read from Supabase. "sample" = built-in data (no .env yet). */
   source: 'live' | 'sample';
 }
@@ -80,7 +91,10 @@ const SAMPLE: Omit<ClinicData, 'source'> = {
     primary_color: '#4F7358',
     accent_color: '#B9A9D9',
     timezone: 'Asia/Kolkata',
+    slot_minutes: 15,
+    booking_window_days: 30,
   },
+  holidays: [],
   hours: [
     { weekday: 0, is_closed: true, opens_at: null, closes_at: null, break_start: null, break_end: null },
     ...[1, 2, 3, 4, 5, 6].map(openDay),
@@ -105,17 +119,21 @@ const SAMPLE: Omit<ClinicData, 'source'> = {
 export async function loadClinic(): Promise<ClinicData> {
   if (!supabase) return { ...SAMPLE, source: 'sample' };
 
-  const [settings, hours, services, doctors] = await Promise.all([
+  const [settings, hours, services, doctors, holidays] = await Promise.all([
     supabase.from('clinic_settings').select('*').single(),
     supabase.from('working_hours').select('*').order('weekday'),
-    supabase.from('services').select('*').order('sort_order'),
+    // Only what is switched on: an administrator may read retired rows too,
+    // but the public pages must never show them.
+    supabase.from('services').select('*').eq('is_active', true).order('sort_order'),
     supabase
       .from('doctors')
-      .select('id, full_name, qualification, specialities, consultation_fee_inr')
+      .select('id, full_name, qualification, specialities, consultation_fee_inr, photo_path')
+      .eq('is_active', true)
       .order('sort_order'),
+    supabase.from('holidays').select('holiday_date, reason').order('holiday_date'),
   ]);
 
-  const failed = [settings, hours, services, doctors].find((r) => r.error);
+  const failed = [settings, hours, services, doctors, holidays].find((r) => r.error);
   if (failed?.error) throw new Error(failed.error.message);
 
   return {
@@ -123,11 +141,45 @@ export async function loadClinic(): Promise<ClinicData> {
     hours: hours.data as WorkingDay[],
     services: services.data as Service[],
     doctors: doctors.data as Doctor[],
+    holidays: (holidays.data as Holiday[]) ?? [],
     source: 'live',
   };
 }
 
 // ----------------------------- helpers --------------------------------
+
+/** Name of the public storage folder for the logo and doctor photos. */
+export const ASSET_BUCKET = 'clinic-assets';
+
+/** Web address of an uploaded image, or null if there is none. */
+export function imageUrl(path: string | null | undefined): string | null {
+  if (!path || !supabase) return null;
+  return supabase.storage.from(ASSET_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+/** The clinic logo: the uploaded one if there is one, otherwise the built-in file. */
+export function logoUrl(settings: ClinicSettings): string {
+  return imageUrl(settings.logo_path) ?? '/logo.png';
+}
+
+/** The calendar date in the clinic's time zone, e.g. "2026-10-11" (+ a number of days). */
+export function clinicDate(timezone: string, now = new Date(), addDays = 0): string {
+  const shifted = new Date(now.getTime() + addDays * 86_400_000);
+  // Built from parts, so every browser gives the same YYYY-MM-DD result.
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(shifted);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** "2026-11-08" -> "Sunday, 8 November 2026" (written out by hand: browsers disagree on the commas) */
+export function formatDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const weekday = DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${weekday}, ${d} ${MONTHS[m - 1]} ${y}`;
+}
 
 /** "09:00:00" -> "9:00 am", "17:30:00" -> "5:30 pm" */
 export function formatTime(t: string): string {
@@ -254,12 +306,24 @@ export interface TodayStatus {
   todaySessions: [string, string][];
 }
 
-/** What a visitor needs to know right now: is the clinic open, and if not, when next. */
-export function todayStatus(hours: WorkingDay[], timezone: string, now = new Date()): TodayStatus {
+/**
+ * What a visitor needs to know right now: is the clinic open, and if not,
+ * when next. Holidays count as closed days.
+ */
+export function todayStatus(
+  hours: WorkingDay[],
+  timezone: string,
+  now = new Date(),
+  holidays: Holiday[] = [],
+): TodayStatus {
   const { weekday, minutes } = clinicNow(timezone, now);
   const dayOf = (w: number) => hours.find((d) => d.weekday === w);
+  const holidayOn = (addDays: number) =>
+    holidays.find((h) => h.holiday_date === clinicDate(timezone, now, addDays));
+
+  const todayHoliday = holidayOn(0);
   const today = dayOf(weekday);
-  const todaySessions = today ? sessionsOf(today) : [];
+  const todaySessions = today && !todayHoliday ? sessionsOf(today) : [];
   const base = { weekday, todaySessions };
 
   const current = todaySessions.find(([from, to]) => minutes >= toMinutes(from) && minutes < toMinutes(to));
@@ -277,17 +341,19 @@ export function todayStatus(hours: WorkingDay[], timezone: string, now = new Dat
     };
   }
 
-  for (let step = 1; step <= 7; step++) {
+  // Look up to two weeks ahead for the next day that is open and not a holiday.
+  for (let step = 1; step <= 14; step++) {
     const w = (weekday + step) % 7;
     const day = dayOf(w);
-    const first = day ? sessionsOf(day)[0] : undefined;
+    const first = day && !holidayOn(step) ? sessionsOf(day)[0] : undefined;
     if (first) {
-      const when = step === 1 ? 'tomorrow' : weekdayName(w);
+      const when = step === 1 ? 'tomorrow' : step < 7 ? weekdayName(w) : `on ${formatDate(clinicDate(timezone, now, step))}`;
+      const opens = `Opens ${when} at ${formatTime(first[0])}`;
       return {
         ...base,
         open: false,
-        headline: todaySessions.length ? 'Closed for today' : 'Closed today',
-        detail: `Opens ${when} at ${formatTime(first[0])}`,
+        headline: todayHoliday ? 'Closed today' : todaySessions.length ? 'Closed for today' : 'Closed today',
+        detail: todayHoliday ? `${todayHoliday.reason}. ${opens}` : opens,
       };
     }
   }

@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import {
+  clinicDate,
+  formatDate,
   formatInr,
+  imageUrl,
   formatTime,
   groupWeek,
   sessionLabel,
@@ -37,8 +40,10 @@ function PinIcon() {
 }
 
 export default function Welcome({ clinic }: { clinic: ClinicData }) {
-  const { settings, hours, services, doctors } = clinic;
-  const status = todayStatus(hours, settings.timezone);
+  const { settings, hours, services, doctors, holidays } = clinic;
+  const status = todayStatus(hours, settings.timezone, new Date(), holidays);
+  const todayIso = clinicDate(settings.timezone);
+  const upcomingHolidays = holidays.filter((h) => h.holiday_date >= todayIso).slice(0, 4);
   const fullAddress = `${settings.address}, ${settings.city}`;
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${settings.name}, ${fullAddress}`,
@@ -182,15 +187,23 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
           <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {doctors.map((doctor) => (
               <li key={doctor.id} className="flex gap-4 rounded-2xl bg-white p-5 sm:p-6">
-                <span
-                  aria-hidden="true"
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-sage-100 text-sage-700"
-                >
-                  <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-                    <circle cx="12" cy="8.500" r="3.500" />
-                    <path d="M5 20c.600-3.600 3.400-5.500 7-5.500s6.400 1.900 7 5.500" />
-                  </svg>
-                </span>
+                {imageUrl(doctor.photo_path) ? (
+                  <img
+                    src={imageUrl(doctor.photo_path)!}
+                    alt=""
+                    className="h-14 w-14 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-sage-100 text-sage-700"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                      <circle cx="12" cy="8.500" r="3.500" />
+                      <path d="M5 20c.600-3.600 3.400-5.500 7-5.500s6.400 1.900 7 5.500" />
+                    </svg>
+                  </span>
+                )}
                 <div className="min-w-0">
                   <h3 className="text-[1.05rem] font-bold text-ink">{doctor.full_name}</h3>
                   {doctor.qualification && (
@@ -254,6 +267,19 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
                 </div>
               );
             })}
+            {upcomingHolidays.length > 0 && (
+              <div className="px-4 py-5">
+                <h3 className="text-[1.05rem] font-bold text-ink">Closed on these days</h3>
+                <ul className="mt-2 space-y-1">
+                  {upcomingHolidays.map((h) => (
+                    <li key={h.holiday_date} className="flex justify-between gap-4">
+                      <span className="text-ink">{formatDate(h.holiday_date)}</span>
+                      <span className="text-right text-muted">{h.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div>
