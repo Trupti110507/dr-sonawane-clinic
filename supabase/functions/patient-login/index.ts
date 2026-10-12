@@ -41,7 +41,10 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
   if (req.method !== 'POST') return reply(405, { message: 'METHOD: use POST' });
   const apikey = req.headers.get('apikey') ?? env.SUPABASE_ANON_KEY ?? '';
   const service = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' };
-  const failed = (message = 'FAILED: sign-in did not work. Please try again') => reply(400, { message });
+  const failed = (message = 'FAILED: sign-in did not work. Please try again', detail = '') => {
+    if (detail) console.error('patient-login:', detail.slice(0, 200));
+    return reply(400, { message });
+  };
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -64,27 +67,27 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
     // 2. The PIN is right: open a session. A fresh one-time password is set on the
     //    account and used immediately; nobody ever sees it.
     const userRes = await fetcher(`${env.SUPABASE_URL}/auth/v1/admin/users/${answer.user_id}`, { headers: service });
-    if (!userRes.ok) return failed();
+    if (!userRes.ok) return failed(undefined, `reading the account failed, status ${userRes.status}`);
     const user = await userRes.json();
     const password = throwawayPassword();
     const set = await fetcher(`${env.SUPABASE_URL}/auth/v1/admin/users/${answer.user_id}`, {
       method: 'PUT', headers: service, body: JSON.stringify({ password }),
     });
-    if (!set.ok) return failed();
+    if (!set.ok) return failed(undefined, `setting the one-time password failed, status ${set.status}: ${await set.text().catch(() => '')}`);
     const login = user.email ? { email: user.email, password } : { phone: user.phone, password };
     const tokenRes = await fetcher(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST', headers: { apikey, 'Content-Type': 'application/json' }, body: JSON.stringify(login),
     });
-    if (!tokenRes.ok) return failed();
+    if (!tokenRes.ok) return failed(undefined, `opening the session failed, status ${tokenRes.status}: ${await tokenRes.text().catch(() => '')}`);
     const session = await tokenRes.json();
     return reply(200, { access_token: session.access_token, refresh_token: session.refresh_token });
-  } catch {
-    return failed();
+  } catch (e) {
+    return failed(undefined, `unexpected error: ${String(e)}`);
   }
 
   async function rpc(name: string, args: unknown) {
     const res = await fetcher(`${env.SUPABASE_URL}/rest/v1/rpc/${name}`, { method: 'POST', headers: service, body: JSON.stringify(args) });
-    if (!res.ok) throw new Error('DATABASE');
+    if (!res.ok) throw new Error(`database step ${name} failed, status ${res.status}: ${(await res.text().catch(() => '')).slice(0, 150)}`);
     return res.json();
   }
 }

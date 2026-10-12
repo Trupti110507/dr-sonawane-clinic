@@ -62,9 +62,19 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
     if (mobile && !/^[6-9]\d{9}$/.test(mobile)) return reply(400, { message: 'INVALID_MOBILE: enter a 10-digit Indian mobile number, or leave it empty' });
     if (body.consent !== true) return reply(400, { message: 'CONSENT_REQUIRED: confirm that the patient has agreed to the privacy notice' });
 
-    // 4. Create the login. It has a hidden address that never receives email, a
-    //    random password nobody knows, and a marker only server code can set,
-    //    which tells the database this is a patient registered at the desk.
+    // 4. Ask the database for a one-time pass (only this server can), then create
+    //    the login with it. The login has a hidden address that never receives
+    //    email and a random password nobody knows. The database checks the pass
+    //    and makes the login a patient registered at the desk.
+    const passRes = await fetcher(`${env.SUPABASE_URL}/rest/v1/rpc/desk_signup_pass`, {
+      method: 'POST', headers: service, body: JSON.stringify({ p_contact_phone: mobile ? `91${mobile}` : null }),
+    });
+    if (!passRes.ok) {
+      const why = (await passRes.text().catch(() => '')).slice(0, 200);
+      console.error('register-patient: getting a pass failed:', passRes.status, why);
+      return reply(400, { message: `FAILED: the patient could not be registered. The database said: ${why || `status ${passRes.status}`}. Has file 011 been run?` });
+    }
+    const pass = (await passRes.json()) as string;
     const bytes = new Uint8Array(12);
     crypto.getRandomValues(bytes);
     const tag = [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
@@ -73,10 +83,16 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
       method: 'POST', headers: service,
       body: JSON.stringify({
         email: `patient-${tag}@${HIDDEN_DOMAIN}`, password, email_confirm: true,
-        app_metadata: { desk_patient: 'true', contact_phone: mobile ? `91${mobile}` : '' },
+        user_metadata: { desk_pass: pass },
       }),
     });
-    if (!made.ok) return reply(400, { message: 'FAILED: the patient could not be registered. Please try again' });
+    if (!made.ok) {
+      // Say why, so the administrator (and the Logs tab) can see the cause.
+      const why = await made.json().catch(() => ({}));
+      const reason = String(why.msg ?? why.message ?? why.error_description ?? why.error ?? `status ${made.status}`).slice(0, 200);
+      console.error('register-patient: creating the login failed:', made.status, reason);
+      return reply(400, { message: `FAILED: the patient could not be registered. The login system said: ${reason}` });
+    }
     const userId = (await made.json()).id as string;
 
     // 6. Save the name and the consent.
@@ -88,11 +104,15 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
       // Do not leave a nameless account behind.
       await fetcher(`${env.SUPABASE_URL}/auth/v1/admin/users/${userId}`, { method: 'DELETE', headers: service });
       const message = String((await saved.json().catch(() => ({}))).message ?? '');
-      return reply(400, { message: /^[A-Z_]+: /.test(message) ? message : 'FAILED: the patient could not be registered. Please try again' });
+      console.error('register-patient: saving the patient failed:', saved.status, message.slice(0, 200));
+      return reply(400, {
+        message: /^[A-Z_]+: /.test(message) ? message : `FAILED: the patient could not be registered. The database said: ${message.slice(0, 200) || `status ${saved.status}`}`,
+      });
     }
     const result = await saved.json();
     return reply(200, { user_id: userId, patient_no: result.patient_no, setup_code: result.setup_code });
-  } catch {
+  } catch (e) {
+    console.error('register-patient: unexpected error:', String(e).slice(0, 200));
     return reply(400, { message: 'FAILED: the patient could not be registered. Please try again' });
   }
 }

@@ -46,20 +46,48 @@ alter table public.patient_logins enable row level security;
 revoke all on public.patient_logins from anon, authenticated;
 
 -- ---------- 3. Accounts made by the desk ----------------------------------
--- The desk's server function creates the login with a hidden address and a
--- marker that only server code can set (app metadata). Those accounts become
--- patients. Anything else keeps the old rules: a phone sign-up is a patient,
--- an email sign-up needs a staff invitation.
+-- The desk's server function first asks the database for a one-time pass
+-- (a long random value, valid for 10 minutes), then creates the login with
+-- that pass attached. The database turns that login into a patient only if
+-- the pass is genuine and unused. Nobody else can obtain a pass: only the
+-- server function may ask for one. Anything else keeps the old rules: a phone
+-- sign-up is a patient, an email sign-up needs a staff invitation.
+create table if not exists public.desk_signup_passes (
+  pass          text primary key,
+  contact_phone text,
+  created_at    timestamptz not null default now(),
+  used_at       timestamptz
+);
+alter table public.desk_signup_passes enable row level security;
+revoke all on public.desk_signup_passes from anon, authenticated;
+
+create or replace function public.desk_signup_pass(p_contact_phone text)
+returns text language plpgsql security definer set search_path = '' as $$
+declare v_pass text := encode(extensions.gen_random_bytes(24), 'hex');
+begin
+  delete from public.desk_signup_passes where created_at < now() - interval '1 day';
+  insert into public.desk_signup_passes (pass, contact_phone)
+  values (v_pass, nullif(btrim(coalesce(p_contact_phone, '')), ''));
+  return v_pass;
+end $$;
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql security definer set search_path = ''
 as $$
 declare
-  inv public.staff_invites%rowtype;
+  inv  public.staff_invites%rowtype;
+  v_ticket public.desk_signup_passes%rowtype;
 begin
-  if coalesce(new.raw_app_meta_data ->> 'desk_patient', '') = 'true' then
-    insert into public.profiles (user_id, role, phone)
-    values (new.id, 'patient', nullif(new.raw_app_meta_data ->> 'contact_phone', ''));
+  if coalesce(new.raw_user_meta_data ->> 'desk_pass', '') <> '' then
+    update public.desk_signup_passes d
+       set used_at = now()
+     where d.pass = new.raw_user_meta_data ->> 'desk_pass'
+       and d.used_at is null and d.created_at > now() - interval '10 minutes'
+    returning d.* into v_ticket;
+    if not found then
+      raise exception 'DESK_PASS_INVALID: this registration was not started by the clinic';
+    end if;
+    insert into public.profiles (user_id, role, phone) values (new.id, 'patient', v_ticket.contact_phone);
     insert into public.patients (profile_id) values (new.id);
     return new;
   end if;
@@ -292,6 +320,8 @@ end $$;
 revoke execute on function public.new_setup_code(uuid) from public, anon, authenticated;
 revoke execute on function public.login_failed(uuid) from public, anon, authenticated;
 revoke execute on function public.login_brake_on() from public, anon, authenticated;
+revoke execute on function public.desk_signup_pass(text) from public, anon, authenticated;
+grant execute on function public.desk_signup_pass(text) to service_role;
 revoke execute on function public.issue_setup_code(uuid) from public, anon;
 grant execute on function public.issue_setup_code(uuid) to authenticated;
 revoke execute on function public.patient_login_status() from public, anon;
