@@ -8,7 +8,7 @@ import { friendlyError } from '../../lib/auth';
 import { clinicDate, formatDate, formatInr, type ClinicData, type ClinicSettings } from '../../lib/clinic';
 import { DESK_METHODS, METHOD_LABEL, summarise, toCsv, type Billable, type Payment, type PaymentMethod } from '../../lib/payments';
 import { supabase } from '../../lib/supabase';
-import { UPI_ID, UPI_REF, cleanUpiRef } from '../../lib/upi';
+import { UPI_ID, UPI_REF, cleanUpiRef, parseUpiQr, readQrFromImage } from '../../lib/upi';
 import { btnDanger, btnOutline, btnPrimary, btnSmall, card, inputBox, pageTitle } from '../../lib/ui';
 
 interface PatientOption {
@@ -507,6 +507,29 @@ function UpiSettings({ settings, onChanged }: { settings: ClinicSettings; onChan
   const [result, setResult] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [reading, setReading] = useState(false);
+
+  /** Fills in the UPI ID and name from a photo or screenshot of the clinic's own UPI QR code. */
+  async function readQr(file: File | undefined) {
+    if (!file) return;
+    setResult(null);
+    setProblems({});
+    setReading(true);
+    let text: string | null = null;
+    try {
+      text = await readQrFromImage(file);
+    } catch {
+      text = null;
+    }
+    setReading(false);
+    if (!text) return setResult({ kind: 'error', text: 'No QR code was found in that picture. Take a closer, straight, well-lit photo of the QR, or use a screenshot of it from the UPI app.' });
+    const found = parseUpiQr(text);
+    if (!found) return setResult({ kind: 'error', text: 'That QR code does not hold a UPI ID. Use the clinic’s UPI payment QR (the one patients scan to pay).' });
+    setUpiId(found.upiId);
+    if (found.payeeName) setName(found.payeeName);
+    setResult({ kind: 'success', text: `Read from the QR code: ${found.upiId}${found.payeeName ? `, ${found.payeeName}` : ''}. Check both, then click Save UPI details.` });
+  }
+
   async function save(e: FormEvent) {
     e.preventDefault();
     setResult(null);
@@ -538,6 +561,16 @@ function UpiSettings({ settings, onChanged }: { settings: ClinicSettings; onChan
         <p className="mt-1 text-[0.95rem] text-muted">
           Use the UPI ID of the clinic&apos;s own bank account, ideally a business (merchant) UPI ID from the bank or from PhonePe, Google Pay or Paytm for Business. Find it in the UPI app under your profile or QR code.
         </p>
+      </div>
+      <div className="rounded-2xl border border-line bg-sage-50 p-4">
+        <p className="font-semibold text-ink">Easiest: use the clinic&apos;s QR code</p>
+        <p className="mt-1 text-[0.95rem] text-muted">
+          Take a photo of the clinic&apos;s printed UPI QR (the one on the counter), or a screenshot of it from the clinic&apos;s UPI app. The UPI ID and name are filled in for you.
+        </p>
+        <label className={`${btnOutline} mt-3 cursor-pointer`}>
+          {reading ? 'Reading the QR code…' : 'Choose a photo of the QR code'}
+          <input type="file" accept="image/*" className="sr-only" disabled={reading} onChange={(e) => { void readQr(e.target.files?.[0]); e.target.value = ''; }} />
+        </label>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="UPI ID" hint="For example drsonawane@okaxis. Leave empty to switch off" value={upiId} maxLength={320} autoCapitalize="none" spellCheck={false} error={problems.upiId} onChange={(e) => setUpiId(e.target.value)} />

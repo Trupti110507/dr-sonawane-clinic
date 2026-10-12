@@ -49,6 +49,9 @@ Wait until Vercel > Deployments shows the new row as **Ready**.
 
 ### Step 3: find the clinic's UPI ID
 
+Skip this step if the clinic already has a printed UPI QR code: step 4 reads the
+UPI ID from a photo of it.
+
 Use the clinic's **own** bank account, the one the accountant uses for the clinic.
 
 - Best: a **business (merchant) UPI ID**. You can get one free from the clinic's
@@ -65,10 +68,15 @@ looks like `name@okaxis`, `9876543210@ybl` or `drsonawane@paytm`.
 
 1. Sign in as the administrator > **Payments**, then scroll down to
    **UPI for payments**.
-2. **UPI ID:** the ID from step 3.
-3. **Name on the account:** the name the bank shows to people who pay, for
-   example "Dr Sonawane Clinic".
-4. Click **Save UPI details**.
+2. **Easiest:** click **Choose a photo of the QR code** and pick a photo of the
+   clinic's printed UPI QR (the one patients already scan at the counter), or a
+   screenshot of it from the clinic's UPI app. On a phone you can take the photo
+   right there. The **UPI ID** and **Name on the account** are filled in for you.
+   Bharat QR codes from banks work too.
+3. Or type them yourself. **UPI ID:** the ID from step 3. **Name on the account:**
+   the name the bank shows to people who pay, for example "Dr Sonawane Clinic".
+4. Check both boxes, then click **Save UPI details**. Nothing is saved until you
+   click it.
 
 To switch it off, empty the UPI ID box and save.
 
@@ -104,7 +112,9 @@ then record it with **Take payment** > **UPI**, and include the reference number
   change is in the access log. A UPI reference is accepted only for UPI, cannot be
   reused, and cannot be changed later. Patients see only their own references.
   Doctors see no payments.
-- Browser tests (22), on a computer and on a phone: the QR is drawn inside the app,
+- Browser tests (26), on a computer and on a phone: reading the UPI ID from a
+  tilted, slightly blurred 12-megapixel phone photo of a QR works, and a website QR
+  or a picture with no QR gets a clear message. the QR is drawn inside the app,
   with no outside website. It holds the right UPI ID, name and amount (checked by
   reading the QR back). There is no "Open my UPI app" button on a computer. The
   Marathi version works, the page has no sideways scrolling on a phone, and the
