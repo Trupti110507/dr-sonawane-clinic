@@ -13,6 +13,7 @@ All nine build stages are complete. You do not need to know how to code to run i
 | Check that a database is locked down | `supabase/CHECK_security.sql` |
 | See how each feature was set up and tested | `STAGE2-GUIDE.md` to `STAGE8-GUIDE.md` |
 | Set up patient sign-in (patient number and PIN) and desk registration | `PATIENT-LOGIN-GUIDE.md` |
+| Take UPI payments by QR code (free) | `UPI-PAYMENTS-GUIDE.md` |
 | SMS codes (optional, not needed any more) | `SMS-SETUP-GUIDE.md` |
 | Check the Marathi wording of the patient pages | `MARATHI-REVIEW.md` |
 

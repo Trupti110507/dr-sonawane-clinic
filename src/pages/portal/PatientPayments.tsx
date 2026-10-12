@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Notice } from '../../components/Field';
 import PortalShell, { PATIENT_LINKS } from '../../components/PortalShell';
 import ReceiptSheet from '../../components/ReceiptSheet';
+import UpiQr from '../../components/UpiQr';
 import { dayOf, timeOf } from '../../lib/appointments';
 import { friendlyError, useAuth } from '../../lib/auth';
 import { formatDate, formatInr, type ClinicData } from '../../lib/clinic';
 import { payOnline, type Payment, type UnpaidAppointment } from '../../lib/payments';
 import { supabase } from '../../lib/supabase';
-import { btnPrimary, card, pageTitle } from '../../lib/ui';
+import { btnOutline, btnPrimary, card, pageTitle } from '../../lib/ui';
 import { tr } from '../../lib/i18n';
 
 /** The patient's own payments: what is still to pay, and every receipt. */
@@ -20,6 +21,8 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [paying, setPaying] = useState('');
+  const [showQr, setShowQr] = useState('');
+  const upi = settings.upi_id && settings.upi_payee_name ? { id: settings.upi_id, name: settings.upi_payee_name } : null;
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -74,7 +77,8 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
               </h2>
               <ul className="mt-3 space-y-3">
                 {due.map((a) => (
-                  <li key={a.appointment_id} className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+                  <li key={a.appointment_id} className={card}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-semibold text-ink">
                         {a.service_name}, {formatInr(a.price_inr)}
@@ -83,12 +87,36 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
                         {formatDate(dayOf(a.starts_at, tz))}, {timeOf(a.starts_at, tz)}, {a.doctor_name}
                       </p>
                     </div>
-                    {settings.online_payments ? (
-                      <button className={`${btnPrimary} shrink-0`} disabled={paying !== ''} onClick={() => void pay(a.appointment_id)}>
-                        {paying === a.appointment_id ? tr('Opening payment…', 'पेमेंट उघडत आहे…') : tr(`Pay ${formatInr(a.price_inr)} online`, `${formatInr(a.price_inr)} ऑनलाइन भरा`)}
-                      </button>
-                    ) : (
-                      <p className="shrink-0 font-semibold text-muted">{tr('Pay at the clinic', 'क्लिनिकमध्ये भरा')}</p>
+                    <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                      {settings.online_payments && (
+                        <button className={btnPrimary} disabled={paying !== ''} onClick={() => void pay(a.appointment_id)}>
+                          {paying === a.appointment_id ? tr('Opening payment…', 'पेमेंट उघडत आहे…') : tr(`Pay ${formatInr(a.price_inr)} online`, `${formatInr(a.price_inr)} ऑनलाइन भरा`)}
+                        </button>
+                      )}
+                      {upi && (
+                        <button className={btnOutline} aria-expanded={showQr === a.appointment_id} onClick={() => setShowQr(showQr === a.appointment_id ? '' : a.appointment_id)}>
+                          {showQr === a.appointment_id ? tr('Hide the QR code', 'QR कोड लपवा') : tr('Pay by UPI', 'UPI ने भरा')}
+                        </button>
+                      )}
+                      {!settings.online_payments && !upi && <p className="font-semibold text-muted">{tr('Pay at the clinic', 'क्लिनिकमध्ये भरा')}</p>}
+                    </div>
+                    </div>
+                    {upi && showQr === a.appointment_id && (
+                      <div className="mt-4 grid gap-4 sm:grid-cols-[18rem_1fr] sm:items-start">
+                        <UpiQr upiId={upi.id} payeeName={upi.name} amountInr={a.price_inr} note={`${profile?.full_name ?? ''} ${a.service_name}`.trim()} />
+                        <div className="space-y-2 text-ink">
+                          <p className="font-semibold">{tr('After paying', 'पैसे भरल्यानंतर')}</p>
+                          <p>
+                            {tr(
+                              'Keep the payment message from your UPI app and show it at the reception when you come. The clinic checks that the money has arrived and gives you a receipt. It then appears below.',
+                              'तुमच्या UPI ॲपमधील पेमेंटचा मेसेज जपून ठेवा आणि क्लिनिकमध्ये आल्यावर रिसेप्शनला दाखवा. पैसे पोहोचले आहेत हे क्लिनिक तपासेल आणि पावती देईल. ती नंतर खाली दिसेल.',
+                            )}
+                          </p>
+                          <p className="text-[0.95rem] text-muted">
+                            {tr('Pay only once. If you are not sure whether it went through, check your UPI app or ask the clinic before paying again.', 'एकदाच भरा. पेमेंट झाले की नाही याबद्दल शंका असल्यास, पुन्हा भरण्यापूर्वी तुमचे UPI ॲप तपासा किंवा क्लिनिकला विचारा.')}
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </li>
                 ))}

@@ -31,6 +31,8 @@ export interface Payment {
   recorded_by_name?: string | null;
   refunded_at: string | null;
   refund_reason?: string | null;
+  /** UPI reference number (UTR), when the desk noted it */
+  upi_ref?: string | null;
 }
 
 /** One appointment on the billing list of a day. */
@@ -77,9 +79,10 @@ export function toCsv(rows: Payment[]): string {
     if (/^[=+\-@]/.test(text)) text = `'${text}`;
     return `"${text.replace(/"/g, '""')}"`;
   };
-  const head = ['Receipt no', 'Date', 'Patient', 'For', 'Doctor', 'Method', 'Amount (Rs)', 'Status', 'Refund reason'];
+  const head = ['Receipt no', 'Date', 'Patient', 'For', 'Doctor', 'Method', 'Amount (Rs)', 'UPI reference', 'Status', 'Refund reason'];
+  // The UPI reference gets a "UTR" label so Excel keeps all 12 digits instead of rounding it as a number.
   const lines = rows.map((r) =>
-    [r.receipt_no, r.paid_on, r.patient_name, r.description, r.doctor_name, METHOD_LABEL[r.method], r.amount_inr, r.status === 'paid' ? 'Paid' : 'Refunded', r.refund_reason].map(cell).join(','),
+    [r.receipt_no, r.paid_on, r.patient_name, r.description, r.doctor_name, METHOD_LABEL[r.method], r.amount_inr, r.upi_ref ? `UTR ${r.upi_ref}` : '', r.status === 'paid' ? 'Paid' : 'Refunded', r.refund_reason].map(cell).join(','),
   );
   return [head.map(cell).join(','), ...lines].join('\r\n');
 }

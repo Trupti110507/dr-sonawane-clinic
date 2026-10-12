@@ -24,6 +24,10 @@ export interface ClinicSettings {
   online_payments?: boolean;
   /** True if the clinic has set up SMS codes as a second way for patients to sign in */
   sms_login?: boolean;
+  /** The clinic's UPI ID for QR payments, for example drsonawane@okaxis */
+  upi_id?: string | null;
+  /** The name the bank shows for that UPI ID */
+  upi_payee_name?: string | null;
 }
 
 export interface WorkingDay {

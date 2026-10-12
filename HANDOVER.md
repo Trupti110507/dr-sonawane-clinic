@@ -122,7 +122,7 @@ Be aware of these before go-live. Each can be built if the clinic needs it.
 
 | Topic | File |
 | --- | --- |
-| Database tables, rules and functions, with comments in plain words | `supabase/001_...sql` to `supabase/011_...sql` |
+| Database tables, rules and functions, with comments in plain words | `supabase/001_...sql` to `supabase/012_...sql` |
 | Security self-check | `supabase/CHECK_security.sql` |
 | Setup and testing steps for each feature | `README.md`, `STAGE2-GUIDE.md` to `STAGE9-GUIDE.md` |
 | Online payment server code | `supabase/functions/razorpay/index.ts` |

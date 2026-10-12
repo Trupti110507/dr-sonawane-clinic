@@ -32,6 +32,7 @@ const WHAT: Record<string, string> = {
   payments: 'a payment',
   patients: 'a patient registration',
   patient_logins: 'a sign-in setup code',
+  clinic_settings: "the clinic's UPI ID",
 };
 
 /** Who opened or changed which patient's record. It shows that something happened, never the medical wording. */

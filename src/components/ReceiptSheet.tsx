@@ -64,6 +64,7 @@ export default function ReceiptSheet({ payment: p, patientName, settings, action
             [tr('For', 'कशासाठी'), p.description],
             [tr('Doctor', 'डॉक्टर'), p.doctor_name],
             [tr('Paid by', 'भरण्याची पद्धत'), METHOD_LABEL[p.method]],
+            [tr('UPI reference', 'UPI संदर्भ क्रमांक'), p.upi_ref ?? null],
           ] as [string, string | null][]
         )
           .filter(([, value]) => value)

@@ -88,6 +88,20 @@ with checks(n, name, verdict, detail) as (
          case when to_regprocedure('public.patient_check_pin(integer, text)') is null then 'File 011 has not been run, so patients cannot sign in with a PIN yet' else 'PINs are stored scrambled and checked only on the server' end
 
   union all
+  select 24, 'The clinic''s UPI ID can be changed only by an administrator, through the app',
+         case when not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'clinic_settings' and column_name = 'upi_id') then 'NOTE'
+              when has_column_privilege('authenticated', 'public.clinic_settings', 'upi_id', 'update')
+                or has_column_privilege('anon', 'public.clinic_settings', 'upi_id', 'update') then 'FIX' else 'OK' end,
+         case when not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'clinic_settings' and column_name = 'upi_id') then 'File 012 has not been run, so there are no UPI QR codes yet'
+              else 'Changes go through set_upi_details and the access log' end
+
+  union all
+  select 25, 'UPI QR payments',
+         'NOTE', case when to_jsonb(cs) ->> 'upi_id' is null then 'OFF. No UPI ID saved, so no QR codes are shown'
+                      else 'ON for ' || (to_jsonb(cs) ->> 'upi_id') || ' (' || coalesce(to_jsonb(cs) ->> 'upi_payee_name', '') || '). Check this is the clinic''s own account' end
+    from public.clinic_settings cs
+
+  union all
   select 9, 'The access log cannot be edited or erased',
          case when count(*) >= 2 then 'OK' else 'FIX' end, count(*) || ' protective triggers on audit_log'
     from pg_trigger t where t.tgrelid = 'public.audit_log'::regclass and not t.tgisinternal

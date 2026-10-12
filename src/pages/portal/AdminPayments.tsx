@@ -2,11 +2,13 @@ import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import Field, { Notice } from '../../components/Field';
 import PortalShell, { ADMIN_LINKS } from '../../components/PortalShell';
 import ReceiptSheet from '../../components/ReceiptSheet';
+import UpiQr from '../../components/UpiQr';
 import { addDays, showPhone, timeOf } from '../../lib/appointments';
 import { friendlyError } from '../../lib/auth';
-import { clinicDate, formatDate, formatInr, type ClinicData } from '../../lib/clinic';
+import { clinicDate, formatDate, formatInr, type ClinicData, type ClinicSettings } from '../../lib/clinic';
 import { DESK_METHODS, METHOD_LABEL, summarise, toCsv, type Billable, type Payment, type PaymentMethod } from '../../lib/payments';
 import { supabase } from '../../lib/supabase';
+import { UPI_ID, UPI_REF, cleanUpiRef } from '../../lib/upi';
 import { btnDanger, btnOutline, btnPrimary, btnSmall, card, inputBox, pageTitle } from '../../lib/ui';
 
 interface PatientOption {
@@ -142,7 +144,7 @@ export default function AdminPayments({ clinic, onChanged }: { clinic: ClinicDat
           )}
         </div>
 
-        {target?.kind === 'other' && <PaymentForm target={target} onClose={() => setTarget(null)} onSaved={saved} />}
+        {target?.kind === 'other' && <PaymentForm settings={settings} target={target} onClose={() => setTarget(null)} onSaved={saved} />}
 
         {bills === null ? (
           <p role="status" className="mt-4 text-muted">Loading appointments…</p>
@@ -174,7 +176,7 @@ export default function AdminPayments({ clinic, onChanged }: { clinic: ClinicDat
                   )}
                 </div>
                 {target?.kind === 'appointment' && target.row.appointment_id === b.appointment_id && (
-                  <PaymentForm target={target} onClose={() => setTarget(null)} onSaved={saved} />
+                  <PaymentForm settings={settings} target={target} onClose={() => setTarget(null)} onSaved={saved} />
                 )}
               </li>
             ))}
@@ -326,6 +328,8 @@ export default function AdminPayments({ clinic, onChanged }: { clinic: ClinicDat
         )}
       </section>
 
+      <UpiSettings settings={settings} onChanged={onChanged} />
+
       {/* ---------- online payment switch ---------- */}
       <section className={`${card} mt-12 max-w-4xl`} aria-labelledby="online-title">
         <h2 id="online-title" className="font-display text-2xl">
@@ -348,7 +352,7 @@ export default function AdminPayments({ clinic, onChanged }: { clinic: ClinicDat
 }
 
 /** Amount, method and (for a payment without an appointment) patient and description. */
-function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: () => void; onSaved: (receiptNo: string) => void }) {
+function PaymentForm({ settings, target, onClose, onSaved }: { settings: ClinicSettings; target: Target; onClose: () => void; onSaved: (receiptNo: string) => void }) {
   const patientId = useId();
   const row = target.kind === 'appointment' ? target.row : null;
   const [patients, setPatients] = useState<PatientOption[]>([]);
@@ -357,9 +361,10 @@ function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: ()
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState(row ? String(row.price_inr) : '');
   const [method, setMethod] = useState<PaymentMethod | ''>('');
+  const [upiRef, setUpiRef] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [problems, setProblems] = useState<{ patient?: string; description?: string; amount?: string; method?: string }>({});
+  const [problems, setProblems] = useState<{ patient?: string; description?: string; amount?: string; method?: string; upiRef?: string }>({});
 
   useEffect(() => {
     if (row || !supabase) return;
@@ -371,6 +376,10 @@ function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: ()
       .then(({ data }) => setPatients((data as PatientOption[]) ?? []));
   }, [row]);
 
+  const rupees = Number(amount);
+  const validAmount = /^\d+$/.test(amount.trim()) && rupees >= 1 && rupees <= 500000;
+  const who = row ? row.patient_name : patients.find((p) => p.user_id === patient)?.full_name;
+  const qrNote = [who, row ? row.service_name : description.trim()].filter(Boolean).join(' ') || 'Clinic payment';
   const q = search.trim().toLowerCase();
   const digits = q.replace(/\D/g, '');
   const matches = patients.filter((p) => !q || p.full_name.toLowerCase().includes(q) || (digits !== '' && (p.phone ?? '').includes(digits)));
@@ -378,12 +387,13 @@ function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: ()
   async function save(e: FormEvent) {
     e.preventDefault();
     setError('');
-    const rupees = Number(amount);
     const found: typeof problems = {};
     if (!row && !patient) found.patient = 'Choose the patient.';
     if (!row && description.trim().length < 2) found.description = 'Say what the payment is for.';
     if (!/^\d+$/.test(amount.trim()) || rupees < 1 || rupees > 500000) found.amount = 'Enter the amount in whole rupees, for example 300.';
     if (!method) found.method = 'Choose how the patient paid.';
+    const ref = method === 'upi' ? cleanUpiRef(upiRef) : '';
+    if (ref && !UPI_REF.test(ref)) found.upiRef = 'Use only the letters and digits of the reference number, or leave it empty.';
     setProblems(found);
     if (Object.keys(found).length || !supabase) return;
     setBusy(true);
@@ -393,6 +403,8 @@ function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: ()
       p_method: method,
       p_description: row ? null : description,
       p_appointment_id: row ? row.appointment_id : null,
+      // Sent only when given, so a desk payment without a reference uses the same call as before.
+      ...(ref ? { p_upi_ref: ref } : {}),
     });
     setBusy(false);
     if (failed) return setError(friendlyError(failed));
@@ -445,6 +457,34 @@ function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: ()
         </div>
         {problems.method && <p className="mt-1.5 text-[0.95rem] font-medium text-[#b3261e]">{problems.method}</p>}
       </fieldset>
+      {method === 'upi' && (
+        <div className="space-y-4">
+          {settings.upi_id && settings.upi_payee_name ? (
+            validAmount ? (
+              <div className="max-w-xs">
+                <UpiQr upiId={settings.upi_id} payeeName={settings.upi_payee_name} amountInr={rupees} note={qrNote} />
+              </div>
+            ) : (
+              <p className="text-muted">Enter the amount to show the QR code.</p>
+            )
+          ) : (
+            <Notice kind="info">Add the clinic&apos;s UPI ID under &quot;UPI for payments&quot; at the bottom of this page to show a QR code here.</Notice>
+          )}
+          <Notice kind="info">
+            Save only after the money shows in the clinic&apos;s own UPI app or bank SMS. A payment screen on the patient&apos;s phone can be faked.
+          </Notice>
+          <Field
+            className="max-w-xs"
+            label="UPI reference number"
+            hint="Optional. The 12-digit number (UTR) in the clinic's payment message"
+            inputMode="numeric"
+            value={upiRef}
+            maxLength={40}
+            error={problems.upiRef}
+            onChange={(e) => setUpiRef(e.target.value)}
+          />
+        </div>
+      )}
       {error && <Notice kind="error">{error}</Notice>}
       <p className="text-[0.95rem] text-muted">Check the amount before saving. A saved payment cannot be edited, only refunded.</p>
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -455,6 +495,61 @@ function PaymentForm({ target, onClose, onSaved }: { target: Target; onClose: ()
           Cancel
         </button>
       </div>
+    </form>
+  );
+}
+
+/** The clinic's UPI ID, used for the QR codes at the desk and in the patient portal. */
+function UpiSettings({ settings, onChanged }: { settings: ClinicSettings; onChanged: () => void }) {
+  const [upiId, setUpiId] = useState(settings.upi_id ?? '');
+  const [name, setName] = useState(settings.upi_payee_name ?? settings.name);
+  const [problems, setProblems] = useState<{ upiId?: string; name?: string }>({});
+  const [result, setResult] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setResult(null);
+    const id = upiId.trim().toLowerCase();
+    const found: typeof problems = {};
+    if (id && !UPI_ID.test(id)) found.upiId = 'A UPI ID looks like name@bank, for example drsonawane@okaxis.';
+    if (id && (name.trim().length < 2 || name.trim().length > 60)) found.name = 'Enter the name the bank shows for this UPI ID.';
+    setProblems(found);
+    if (Object.keys(found).length || !supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('set_upi_details', { p_upi_id: id, p_payee_name: name.trim() });
+    setBusy(false);
+    if (error) return setResult({ kind: 'error', text: friendlyError(error) });
+    setResult({ kind: 'success', text: id ? 'Saved. UPI QR codes now show this UPI ID.' : 'UPI ID removed. No QR codes are shown.' });
+    onChanged();
+  }
+
+  return (
+    <form onSubmit={save} noValidate className={`${card} mt-12 max-w-4xl space-y-5`} aria-labelledby="upi-title">
+      <div>
+        <h2 id="upi-title" className="font-display text-2xl">
+          UPI for payments
+        </h2>
+        <p className="mt-2 text-ink">
+          {settings.upi_id
+            ? `On. Choosing UPI at the desk shows a QR code for ${settings.upi_id}, and patients see a "Pay by UPI" button for their appointments.`
+            : 'Off. Add the clinic’s UPI ID to show QR codes with the exact amount. Money goes straight to the clinic’s bank account, with no fee.'}
+        </p>
+        <p className="mt-1 text-[0.95rem] text-muted">
+          Use the UPI ID of the clinic&apos;s own bank account, ideally a business (merchant) UPI ID from the bank or from PhonePe, Google Pay or Paytm for Business. Find it in the UPI app under your profile or QR code.
+        </p>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="UPI ID" hint="For example drsonawane@okaxis. Leave empty to switch off" value={upiId} maxLength={320} autoCapitalize="none" spellCheck={false} error={problems.upiId} onChange={(e) => setUpiId(e.target.value)} />
+        <Field label="Name on the account" hint="As the bank shows it to the person paying" value={name} maxLength={60} error={problems.name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      {result && <Notice kind={result.kind}>{result.text}</Notice>}
+      <button type="submit" disabled={busy} className={btnOutline}>
+        {busy ? 'Saving…' : 'Save UPI details'}
+      </button>
+      <p className="text-[0.95rem] text-muted">
+        Before using it with patients, pay ₹1 to this QR from another phone and check that the money reaches the clinic&apos;s account.
+      </p>
     </form>
   );
 }
