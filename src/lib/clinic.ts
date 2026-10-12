@@ -21,6 +21,8 @@ export interface ClinicSettings {
   booking_window_days?: number;
   /** True once the administrator has switched online payment on */
   online_payments?: boolean;
+  /** True if the clinic has set up SMS codes as a second way for patients to sign in */
+  sms_login?: boolean;
 }
 
 export interface WorkingDay {

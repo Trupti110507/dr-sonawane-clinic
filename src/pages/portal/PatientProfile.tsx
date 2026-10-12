@@ -24,17 +24,19 @@ export default function PatientProfile() {
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [result, setResult] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [patientNo, setPatientNo] = useState<number | null>(null);
 
   useEffect(() => {
     if (!supabase || !profile) return;
     // Row Level Security returns only this patient's own row.
     supabase
       .from('patients')
-      .select('date_of_birth, gender, address, emergency_contact_name, emergency_contact_phone')
+      .select('patient_no, date_of_birth, gender, address, emergency_contact_name, emergency_contact_phone')
       .eq('profile_id', profile.user_id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) setResult({ kind: 'error', text: friendlyError(error) });
+        setPatientNo(data?.patient_no ?? null);
         setForm({
           full_name: profile.full_name,
           date_of_birth: data?.date_of_birth ?? '',
@@ -86,8 +88,17 @@ export default function PatientProfile() {
       ) : (
         <form onSubmit={submit} noValidate className={`${card} mt-6 max-w-2xl space-y-5`}>
           <p className="text-muted">
-            Mobile number: <span className="font-semibold text-ink">+{profile?.phone}</span>. To change it,
-            please call the clinic.
+            {patientNo !== null && (
+              <>
+                Patient number: <span className="font-semibold text-ink">{patientNo}</span>.{' '}
+              </>
+            )}
+            {profile?.phone ? (
+              <>
+                Mobile number: <span className="font-semibold text-ink">+{profile.phone}</span>.{' '}
+              </>
+            ) : null}
+            To change these, or your PIN, please ask at the clinic.
           </p>
           <Field label="Full name" autoComplete="name" value={form.full_name} onChange={set('full_name')} error={errors.full_name} />
           <div className="grid gap-5 sm:grid-cols-2">

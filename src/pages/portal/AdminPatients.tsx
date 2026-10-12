@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import CareAccess from '../../components/CareAccess';
+import SetupSlip from '../../components/SetupSlip';
 import Field, { Notice } from '../../components/Field';
 import PortalShell, { ADMIN_LINKS } from '../../components/PortalShell';
 import { friendlyError } from '../../lib/auth';
-import type { Doctor } from '../../lib/clinic';
+import type { ClinicSettings, Doctor } from '../../lib/clinic';
 import { supabase } from '../../lib/supabase';
 import { btnDanger, btnOutline, btnPrimary, btnSmall, card, inputBox, pageTitle } from '../../lib/ui';
 
@@ -20,7 +21,24 @@ const shortDate = (iso: string) => new Intl.DateTimeFormat('en-IN', { day: 'nume
 const showPhone = (p: string | null) => (p && /^91\d{10}$/.test(p) ? `+91 ${p.slice(2, 7)} ${p.slice(7)}` : p ? `+${p}` : 'No number');
 
 /** Registered patients: contact details and account status only. No medical information. */
-export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
+interface LoginStatus {
+  patient_id: string;
+  patient_no: number;
+  has_pin: boolean;
+  code_waiting: boolean;
+  locked: boolean;
+  last_login_at: string | null;
+}
+
+/** A slip to show: the patient's number and a fresh one-time setup code. */
+interface Slip {
+  name: string;
+  patientNo: number;
+  setupCode: string;
+  expiresAt: string;
+}
+
+export default function AdminPatients({ doctors, settings }: { doctors: Doctor[]; settings: ClinicSettings }) {
   const searchId = useId();
   const [rows, setRows] = useState<PatientRow[] | null>(null);
   const [search, setSearch] = useState('');
@@ -29,6 +47,8 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
   const [accessFor, setAccessFor] = useState('');
   const [registering, setRegistering] = useState(false);
   const [notice, setNotice] = useState('');
+  const [logins, setLogins] = useState<Record<string, LoginStatus>>({});
+  const [slip, setSlip] = useState<Slip | null>(null);
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -39,7 +59,21 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
       .order('created_at', { ascending: false });
     setError(failed ? friendlyError(failed) : '');
     setRows((data as PatientRow[]) ?? []);
+    const { data: status } = await supabase.rpc('patient_login_status');
+    setLogins(Object.fromEntries(((status as LoginStatus[]) ?? []).map((x) => [x.patient_id, x])));
   }, []);
+
+  async function giveCode(row: PatientRow) {
+    if (!supabase) return;
+    setNotice('');
+    setError('');
+    const { data, error: failed } = await supabase.rpc('issue_setup_code', { p_patient_id: row.user_id });
+    if (failed) return setError(friendlyError(failed));
+    const d = data as { setup_code: string; patient_no: number; expires_at: string };
+    setSlip({ name: row.full_name || 'this patient', patientNo: d.patient_no, setupCode: d.setup_code, expiresAt: d.expires_at });
+    void load();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   useEffect(() => {
     void load();
@@ -56,7 +90,7 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
   const q = search.trim().toLowerCase();
   const digits = q.replace(/\D/g, '');
   const shown = (rows ?? []).filter(
-    (r) => !q || r.full_name.toLowerCase().includes(q) || (digits !== '' && (r.phone ?? '').includes(digits)),
+    (r) => !q || r.full_name.toLowerCase().includes(q) || (digits !== '' && ((r.phone ?? '').includes(digits) || String(logins[r.user_id]?.patient_no ?? '') === digits)),
   );
 
   return (
@@ -71,25 +105,29 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
           <Notice kind="success">{notice}</Notice>
         </div>
       )}
+      {slip && (
+        <SetupSlip settings={settings} patientName={slip.name} patientNo={slip.patientNo} setupCode={slip.setupCode} expiresAt={slip.expiresAt} onDone={() => setSlip(null)} />
+      )}
       {registering ? (
         <RegisterForm
+          patients={rows ?? []}
           onClose={(saved) => {
             setRegistering(false);
             if (saved) {
-              setNotice(saved);
+              setSlip(saved);
               void load();
             }
           }}
         />
       ) : (
-        <button className={`${btnPrimary} mt-6`} onClick={() => { setNotice(''); setRegistering(true); }}>
+        <button className={`${btnPrimary} mt-6`} onClick={() => { setNotice(''); setSlip(null); setRegistering(true); }}>
           Register a patient
         </button>
       )}
 
       <div className="mt-6 max-w-3xl">
         <label htmlFor={searchId} className="block font-semibold text-ink">
-          Search by name or mobile number
+          Search by name, patient number or mobile number
         </label>
         <input id={searchId} type="search" className={inputBox} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
@@ -119,10 +157,17 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
                     {!r.is_active && <span className="ml-2 rounded-full bg-[#eceeed] px-2 py-0.5 text-sm font-semibold text-muted">Deactivated</span>}
                   </p>
                   <p className="text-[0.95rem] text-muted">
+                    {logins[r.user_id] ? `No. ${logins[r.user_id].patient_no} · ` : ''}
                     {showPhone(r.phone)}, registered {shortDate(r.created_at)}
                   </p>
+                  {logins[r.user_id] && <p className="text-[0.95rem] text-muted">{loginLabel(logins[r.user_id])}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                {r.is_active && (
+                  <button className={btnSmall} onClick={() => void giveCode(r)} aria-label={`${logins[r.user_id]?.has_pin ? 'New setup code' : 'Give setup code'} for ${r.full_name || 'this patient'}`}>
+                    {logins[r.user_id]?.has_pin ? 'New setup code' : 'Give setup code'}
+                  </button>
+                )}
                 <button className={btnSmall} aria-expanded={accessFor === r.user_id} aria-label={`Doctor access for ${r.full_name || 'this patient'}`} onClick={() => setAccessFor(accessFor === r.user_id ? '' : r.user_id)}>
                   Doctor access
                 </button>
@@ -156,8 +201,15 @@ export default function AdminPatients({ doctors }: { doctors: Doctor[] }) {
   );
 }
 
-/** Front desk: register a walk-in patient by name and mobile number. Contact details only. */
-function RegisterForm({ onClose }: { onClose: (saved?: string) => void }) {
+function loginLabel(l: LoginStatus): string {
+  if (l.locked) return 'Sign-in locked for 30 minutes after wrong PINs. A new setup code unlocks it.';
+  if (l.has_pin) return l.last_login_at ? `PIN set, last signed in ${shortDate(l.last_login_at)}` : 'PIN set';
+  if (l.code_waiting) return 'Setup code given, PIN not chosen yet';
+  return 'Not set up for sign-in yet';
+}
+
+/** Front desk: register a walk-in patient. Contact details only. */
+function RegisterForm({ patients, onClose }: { patients: PatientRow[]; onClose: (saved?: Slip) => void }) {
   const dobId = useId();
   const genderId = useId();
   const consentId = useId();
@@ -170,6 +222,9 @@ function RegisterForm({ onClose }: { onClose: (saved?: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [problems, setProblems] = useState<{ name?: string; mobile?: string; again?: string; consent?: string }>({});
+  const familyId = useId();
+  const [family, setFamily] = useState(false);
+  const sharing = /^[6-9]\d{9}$/.test(mobile) ? patients.filter((p) => p.phone === `91${mobile}` || p.phone === `+91${mobile}`) : [];
   const today = new Date().toISOString().slice(0, 10);
 
   async function save(e: FormEvent) {
@@ -177,13 +232,14 @@ function RegisterForm({ onClose }: { onClose: (saved?: string) => void }) {
     setError('');
     const found: typeof problems = {};
     if (name.trim().length < 2) found.name = "Enter the patient's full name.";
-    if (!/^[6-9]\d{9}$/.test(mobile)) found.mobile = 'Enter a 10-digit mobile number, without +91 or 0.';
-    else if (again !== mobile) found.again = 'The two numbers do not match. Check with the patient and type it again.';
+    if (mobile && !/^[6-9]\d{9}$/.test(mobile)) found.mobile = 'Enter a 10-digit mobile number without +91 or 0, or leave it empty.';
+    else if (mobile && again !== mobile) found.again = 'The two numbers do not match. Check with the patient and type it again.';
+    else if (sharing.length > 0 && !family) found.mobile = 'This number is already used by another patient. Tick the box below if this is a family member.';
     if (!consent) found.consent = 'Tick the box once the patient has agreed.';
     setProblems(found);
     if (Object.keys(found).length || !supabase) return;
     setBusy(true);
-    const { error: failed } = await supabase.functions.invoke('register-patient', {
+    const { data, error: failed } = await supabase.functions.invoke('register-patient', {
       body: { full_name: name, mobile, date_of_birth: dob || null, gender: gender || null, consent: true },
     });
     setBusy(false);
@@ -196,19 +252,20 @@ function RegisterForm({ onClose }: { onClose: (saved?: string) => void }) {
       }
       return setError(message ? friendlyError({ message }) : 'The patient could not be registered. Check that the registration server function is set up, then try again.');
     }
-    onClose(`${name.trim()} is registered. They can sign in later with the mobile number ${mobile}.`);
+    const d = data as { patient_no: number; setup_code: string };
+    onClose({ name: name.trim(), patientNo: d.patient_no, setupCode: d.setup_code, expiresAt: new Date(Date.now() + 7 * 864e5).toISOString() });
   }
 
   return (
     <form onSubmit={save} noValidate className={`${card} mt-6 max-w-3xl space-y-5 border-sage-300`}>
       <h2 className="font-display text-2xl">Register a patient</h2>
       <p className="text-muted">
-        For a patient at the desk who has not signed in on their own phone. Enter contact details only. The mobile number is how the patient will sign in later, so it must be theirs or a family member's.
+        Enter contact details only. The patient gets a patient number and a one-time setup code on a slip, which they use to choose their own PIN. Family members can share one mobile number; each gets their own patient number.
       </p>
       <Field label="Full name" value={name} maxLength={80} autoComplete="off" error={problems.name} onChange={(e) => setName(e.target.value)} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Mobile number" hint="10 digits" prefix="+91" inputMode="numeric" autoComplete="off" value={mobile} error={problems.mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))} />
-        <Field label="Mobile number again" hint="Type it a second time to catch mistakes" prefix="+91" inputMode="numeric" autoComplete="off" value={again} error={problems.again} onChange={(e) => setAgain(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+        <Field label="Mobile number" hint="For contacting the patient. Leave empty if they have none" prefix="+91" inputMode="numeric" autoComplete="off" value={mobile} error={problems.mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+        <Field label="Mobile number again" hint="Type it again to catch mistakes" prefix="+91" inputMode="numeric" autoComplete="off" value={again} error={problems.again} onChange={(e) => setAgain(e.target.value.replace(/\D/g, '').slice(0, 10))} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -232,6 +289,14 @@ function RegisterForm({ onClose }: { onClose: (saved?: string) => void }) {
           </select>
         </div>
       </div>
+      {sharing.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl bg-lavender-100 p-4">
+          <input id={familyId} type="checkbox" className="mt-1 h-5 w-5 accent-[var(--brand-primary)]" checked={family} onChange={(e) => setFamily(e.target.checked)} />
+          <label htmlFor={familyId} className="text-ink">
+            This number is already used by {sharing.map((p) => p.full_name || 'a patient').join(', ')}. This is a different person in the same family. Register them separately.
+          </label>
+        </div>
+      )}
       <div>
         <div className="flex items-start gap-3">
           <input id={consentId} type="checkbox" className="mt-1 h-5 w-5 accent-[var(--brand-primary)]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />

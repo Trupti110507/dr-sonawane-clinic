@@ -9,7 +9,7 @@ One clinic, three portals.
 
 | Portal | Who | What they can do |
 | --- | --- | --- |
-| Patient | Signs in with a mobile number and SMS code | Book, move and cancel own appointments; see own visits, approved prescriptions, treatment plans, shared photos, receipts; give or withdraw photo consent |
+| Patient | Signs in with a patient number and a 6-digit PIN, set up with a code from the desk | Book, move and cancel own appointments; see own visits, approved prescriptions, treatment plans, shared photos, receipts; give or withdraw photo consent |
 | Doctor | Invited by an admin; email and password | Own calendar and leave; records of patients they treat: notes, prescriptions, treatment plans, photos |
 | Admin | Invited by an admin; email and password | Clinic details, hours, services, doctors, staff accounts, all appointments, payments and receipts, the access log. **Cannot** read notes, prescriptions or photos |
 
@@ -25,7 +25,6 @@ Fill this in and keep it somewhere safe (not in this folder, which goes to GitHu
 | Supabase (development) | Test copy only | | |
 | Vercel | The website | | |
 | GitHub | The app's code | Trupti110507 | |
-| SMS provider | Sends sign-in codes | | |
 | Email sender (SMTP) | Sends staff confirmation emails | | |
 | Razorpay (if used) | Online payments | | |
 | Web address (if bought) | The domain name | | |
@@ -42,6 +41,7 @@ Rules for these accounts:
 ## Routine
 
 **Every day** (admin)
+- Register new patients at the desk and hand over their sign-in slip.
 - Take payments in Admin > Payments. At closing, set the period to Today and
   compare the Cash total with the cash drawer.
 
@@ -85,10 +85,12 @@ Rules for these accounts:
 | A staff password may be known to someone else | Admin > Staff accounts > switch the account off. Have them use "Forgot password", then switch it back on |
 | A staff phone or laptop is lost | Switch that person's account off at once. The app also signs staff out after 30 minutes without use |
 | Someone may have seen records they should not | Switch off the account involved. Admin > Access log shows who opened which record and when. Write down what you find, and tell the doctor in charge. There may be a legal duty to report; ask a lawyer |
-| A patient cannot get the SMS code | Check the SMS provider's dashboard for balance and delivery. The patient can still be seen: register them at the desk (Admin > Patients) and book from Admin > Appointments |
+| A patient forgot their PIN, or lost the slip | Admin > Patients > **New setup code** next to their name. Give them the new slip. Their records are untouched |
+| A patient's sign-in is locked after wrong PINs | It unlocks by itself after 30 minutes. A new setup code unlocks it at once |
+| Several patients say sign-in is "busy" | Many wrong PINs were typed on the site in a short time. It reopens by itself after 15 minutes. If it keeps happening, check Admin > Access log and tell a developer |
 | The website does not load | Check https://www.vercel-status.com and https://status.supabase.com. If both are fine, look at Vercel > Deployments for a failed deployment and click Redeploy on the last good one |
 | A page shows "permission denied" or "not allowed" to the right person | Note the page and the message, and ask a developer. Do not loosen database rules to get past it |
-| A patient was registered with the wrong mobile number | Admin > Patients > Deactivate that entry, then register again with the right number. See `DESK-REGISTRATION-GUIDE.md` |
+| A patient was registered twice by mistake | Admin > Patients > Deactivate the duplicate |
 | A wrong payment was saved | Refund it with a reason and save the correct one. Payments cannot be edited, on purpose |
 | A wrong prescription was approved | The doctor withdraws it with a reason and writes a new one |
 | A patient asks for their photos to be deleted | A treating doctor deletes them from the patient's record |
@@ -108,9 +110,6 @@ Rules for these accounts:
 
 Be aware of these before go-live. Each can be built if the clinic needs it.
 
-- **Every patient needs a mobile number, and each number can belong to one
-  patient only.** The front desk can register a walk-in patient (Admin > Patients
-  > Register a patient), but two family members cannot share one number.
 - No appointment reminders by SMS or WhatsApp.
 - No button for a patient to download or delete all their data.
 - Receipts carry no GST lines.
@@ -123,9 +122,10 @@ Be aware of these before go-live. Each can be built if the clinic needs it.
 
 | Topic | File |
 | --- | --- |
-| Database tables, rules and functions, with comments in plain words | `supabase/001_...sql` to `supabase/010_...sql` |
+| Database tables, rules and functions, with comments in plain words | `supabase/001_...sql` to `supabase/011_...sql` |
 | Security self-check | `supabase/CHECK_security.sql` |
 | Setup and testing steps for each feature | `README.md`, `STAGE2-GUIDE.md` to `STAGE9-GUIDE.md` |
 | Online payment server code | `supabase/functions/razorpay/index.ts` |
 | Front-desk registration server code | `supabase/functions/register-patient/index.ts` |
+| Patient PIN sign-in server code | `supabase/functions/patient-login/index.ts` |
 | Screens | `src/pages/`, `src/components/` |

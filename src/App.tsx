@@ -105,7 +105,7 @@ export default function App() {
         <Route path="/" element={<Welcome clinic={clinic} />} />
         <Route path="/book" element={<Book clinic={clinic} />} />
         {/* Accounts */}
-        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/sign-in" element={<SignIn settings={clinic.settings} />} />
         <Route path="/staff/activate" element={<StaffActivate />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -137,7 +137,7 @@ export default function App() {
         <Route path="/admin/hours" element={<RequireRole role="admin"><AdminHours hours={clinic.hours} holidays={clinic.holidays} timezone={clinic.settings.timezone} onChanged={refresh} /></RequireRole>} />
         <Route path="/admin/services" element={<RequireRole role="admin"><AdminServices onChanged={refresh} /></RequireRole>} />
         <Route path="/admin/doctors" element={<RequireRole role="admin"><AdminDoctors onChanged={refresh} /></RequireRole>} />
-        <Route path="/admin/patients" element={<RequireRole role="admin"><AdminPatients doctors={clinic.doctors} /></RequireRole>} />
+        <Route path="/admin/patients" element={<RequireRole role="admin"><AdminPatients doctors={clinic.doctors} settings={clinic.settings} /></RequireRole>} />
         <Route path="/admin/audit" element={<RequireRole role="admin"><AdminAudit clinic={clinic} /></RequireRole>} />
 
         <Route

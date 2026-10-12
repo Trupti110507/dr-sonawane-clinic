@@ -14,7 +14,7 @@ Day-to-day running after go-live is in `HANDOVER.md`.
   visitor who is not signed in can run nothing and read only public clinic details.
 - `supabase/CHECK_security.sql`: a self-check you paste into Supabase. It changes
   nothing and prints OK, FIX or NOTE for 20 checks.
-- `supabase/PRODUCTION_setup_all_in_one.sql`: files 001 to 010 joined into one,
+- `supabase/PRODUCTION_setup_all_in_one.sql`: files 001 to 011 joined into one,
   for the new production project, with the sample entries removed.
 - **Automatic sign-out for staff:** a doctor or administrator who does not use
   the app for 30 minutes is signed out. Patients on their own phones are not.
@@ -37,7 +37,7 @@ Tested here, on a test copy with made-up people:
 
 | Item | Why it matters |
 | --- | --- |
-| Real SMS codes (needs the SMS provider and DLT) | Patients cannot sign in without it |
+| Patient sign-in with patient number and PIN (`PATIENT-LOGIN-GUIDE.md`) | Tested against a simulated Supabase only |
 | Staff confirmation emails through your own email sender (SMTP) | Staff outside your Supabase team cannot activate accounts without it |
 | Photo upload against real Supabase Storage | Tested on a stand-in only |
 | Razorpay, in Test Mode and then Live | Tested against a simulated Razorpay only |
@@ -86,7 +86,7 @@ separate project, so that test data and real data never mix.
    (Skin consultation Rs. 300, Follow-up consultation Rs. 200).
 2. New query > paste `supabase/002b_first_admin.sql` (with the real
    administrator's email in it) > **Run**.
-3. Add the front-desk registration function: Step 2 of `DESK-REGISTRATION-GUIDE.md`.
+3. Add the two patient sign-in functions, `register-patient` and `patient-login`: Steps 2 and 3 of `PATIENT-LOGIN-GUIDE.md`.
 
 ### 2.3 Sign-in settings
 
@@ -96,8 +96,8 @@ Repeat the Stage 2 settings in the new project (`STAGE2-GUIDE.md`):
 - **Email:** confirmation ON, minimum password length **10**.
 - **Your own email sender (SMTP):** required, so invited staff receive their
   confirmation email.
-- **Phone:** ON, with the real SMS provider (`SMS-SETUP-GUIDE.md`).
-  **Leave the test numbers box empty.** Never enter `919876543210=123456` here.
+- **Phone:** leave it **off**. Patients sign in with patient number and PIN,
+  which needs no SMS. Never enter the test number `919876543210=123456` here.
 
 ### 2.4 Online payment (only if you use it)
 
@@ -137,10 +137,10 @@ Do not enter a real patient until every box is ticked.
 - [ ] The project is on a plan with automatic backups.
 
 **Sign-in**
-- [ ] A staff member's own phone receives a real SMS code and signs in as a patient.
+- [ ] A staff member registered as a test patient sets a PIN with the setup code, and signs in with patient number and PIN.
 - [ ] An invited doctor receives the confirmation email and signs in.
 - [ ] An email that was never invited cannot create a staff account.
-- [ ] The test numbers box in Authentication > Phone is empty.
+- [ ] Authentication > Phone is off, and its test numbers box is empty.
 
 **A full dry run, with staff playing the patient (no real patient yet)**
 - [ ] Register a patient at the desk (a staff member's own number).

@@ -6,10 +6,12 @@
 //   Leave "Verify JWT" ON for this function. No extra secrets are needed.
 //
 // What it does
-//   An administrator at the desk enters a walk-in patient's name and mobile
-//   number. This function checks that the person asking really is an active
-//   administrator, creates the patient's account for that mobile number, and
-//   saves the name. The patient can later sign in with the same number.
+//   An administrator at the desk enters a walk-in patient's name and, if they
+//   have one, a contact mobile number. This function checks that the person
+//   asking really is an active administrator, creates the patient's account,
+//   and returns the patient's number and a one-time setup code. The patient
+//   uses those once to choose a 6-digit PIN (see the patient-login function).
+//   Family members may share one contact number; each gets their own patient number.
 //
 // Why a server function: creating an account needs the project's secret key.
 // That key lives only here on the server, never in the app.
@@ -20,6 +22,9 @@ export interface Env {
   SUPABASE_ANON_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
 }
+
+/** Login addresses for desk-registered patients end with this. No email is ever sent to them. */
+const HIDDEN_DOMAIN = 'patients.dr-sonawane-clinic.vercel.app';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -54,32 +59,28 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
     const name = String(body.full_name ?? '').trim();
     const mobile = String(body.mobile ?? '').replace(/\D/g, '');
     if (name.length < 2 || name.length > 80) return reply(400, { message: 'INVALID_NAME: enter the patient\'s full name (2 to 80 characters)' });
-    if (!/^[6-9]\d{9}$/.test(mobile)) return reply(400, { message: 'INVALID_MOBILE: enter a 10-digit Indian mobile number' });
+    if (mobile && !/^[6-9]\d{9}$/.test(mobile)) return reply(400, { message: 'INVALID_MOBILE: enter a 10-digit Indian mobile number, or leave it empty' });
     if (body.consent !== true) return reply(400, { message: 'CONSENT_REQUIRED: confirm that the patient has agreed to the privacy notice' });
-    const phone = `91${mobile}`;
 
-    // 4. Already a patient? Then there is nothing to create.
-    const found = await fetcher(`${env.SUPABASE_URL}/rest/v1/profiles?select=user_id&phone=in.(${phone},%2B${phone})`, { headers: service });
-    if (found.ok && ((await found.json()) as unknown[]).length > 0) {
-      return reply(409, { message: 'ALREADY_REGISTERED: this mobile number is already registered. Find the patient in the list below' });
-    }
-
-    // 5. Create the account for that mobile number. No password and no code is set;
-    //    the patient signs in later with an SMS code like everyone else.
+    // 4. Create the login. It has a hidden address that never receives email, a
+    //    random password nobody knows, and a marker only server code can set,
+    //    which tells the database this is a patient registered at the desk.
+    const bytes = new Uint8Array(12);
+    crypto.getRandomValues(bytes);
+    const tag = [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
+    const password = tag + [...crypto.getRandomValues(new Uint8Array(12))].map((x) => x.toString(16).padStart(2, '0')).join('') + 'Pq7!';
     const made = await fetcher(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
-      method: 'POST', headers: service, body: JSON.stringify({ phone: `+${phone}`, phone_confirm: true }),
+      method: 'POST', headers: service,
+      body: JSON.stringify({
+        email: `patient-${tag}@${HIDDEN_DOMAIN}`, password, email_confirm: true,
+        app_metadata: { desk_patient: 'true', contact_phone: mobile ? `91${mobile}` : '' },
+      }),
     });
-    if (!made.ok) {
-      const text = JSON.stringify(await made.json().catch(() => ({}))).toLowerCase();
-      if (text.includes('already') || text.includes('exists')) {
-        return reply(409, { message: 'ALREADY_REGISTERED: this mobile number is already registered. Find the patient in the list below' });
-      }
-      return reply(400, { message: 'FAILED: the patient could not be registered. Please try again' });
-    }
+    if (!made.ok) return reply(400, { message: 'FAILED: the patient could not be registered. Please try again' });
     const userId = (await made.json()).id as string;
 
     // 6. Save the name and the consent.
-    const saved = await fetcher(`${env.SUPABASE_URL}/rest/v1/rpc/desk_register_patient`, {
+    const saved = await fetcher(`${env.SUPABASE_URL}/rest/v1/rpc/desk_register_patient_v2`, {
       method: 'POST', headers: service,
       body: JSON.stringify({ p_user_id: userId, p_full_name: name, p_date_of_birth: body.date_of_birth || null, p_gender: body.gender || null, p_admin_id: adminId, p_consent: true }),
     });
@@ -89,7 +90,8 @@ export async function handle(req: Request, env: Env, fetcher: typeof fetch = fet
       const message = String((await saved.json().catch(() => ({}))).message ?? '');
       return reply(400, { message: /^[A-Z_]+: /.test(message) ? message : 'FAILED: the patient could not be registered. Please try again' });
     }
-    return reply(200, { user_id: userId });
+    const result = await saved.json();
+    return reply(200, { user_id: userId, patient_no: result.patient_no, setup_code: result.setup_code });
   } catch {
     return reply(400, { message: 'FAILED: the patient could not be registered. Please try again' });
   }

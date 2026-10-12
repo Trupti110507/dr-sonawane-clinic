@@ -30,6 +30,8 @@ const WHAT: Record<string, string> = {
   patient_photos: 'a progress photo',
   photo_consents: 'the photo consent',
   payments: 'a payment',
+  patients: 'a patient registration',
+  patient_logins: 'a sign-in setup code',
 };
 
 /** Who opened or changed which patient's record. It shows that something happened, never the medical wording. */

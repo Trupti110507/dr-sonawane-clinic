@@ -71,14 +71,22 @@ with checks(n, name, verdict, detail) as (
 
   union all
   select 21, 'Only server code can create a patient at the desk',
-         case when to_regprocedure('public.desk_register_patient(uuid, text, date, text, uuid, boolean)') is null then 'NOTE'
-              when has_function_privilege('authenticated', 'public.desk_register_patient(uuid, text, date, text, uuid, boolean)', 'execute') then 'FIX' else 'OK' end,
-         case when to_regprocedure('public.desk_register_patient(uuid, text, date, text, uuid, boolean)') is null then 'File 010 has not been run, so the desk cannot register patients yet' else 'Reached only through the register-patient server function' end
+         case when to_regprocedure('public.desk_register_patient_v2(uuid, text, date, text, uuid, boolean)') is null then 'NOTE'
+              when has_function_privilege('authenticated', 'public.desk_register_patient_v2(uuid, text, date, text, uuid, boolean)', 'execute') then 'FIX' else 'OK' end,
+         case when to_regprocedure('public.desk_register_patient_v2(uuid, text, date, text, uuid, boolean)') is null then 'File 011 has not been run, so the desk cannot register patients yet' else 'Reached only through the register-patient server function' end
 
   union all
   select 22, 'The clinic has at least one doctor and one service listed',
          case when (select count(*) from public.doctors where is_active) > 0 and (select count(*) from public.services where is_active) > 0 then 'OK' else 'NOTE' end,
          (select count(*) from public.doctors where is_active) || ' active doctor(s), ' || (select count(*) from public.services where is_active) || ' active service(s). Add them in the Admin portal'
+  union all
+  select 23, 'Patient PINs can be checked only by the server sign-in function',
+         case when to_regprocedure('public.patient_check_pin(integer, text)') is null then 'NOTE'
+              when has_function_privilege('authenticated', 'public.patient_check_pin(integer, text)', 'execute')
+                or has_function_privilege('authenticated', 'public.patient_set_pin(integer, text, text)', 'execute')
+                or has_table_privilege('authenticated', 'public.patient_logins', 'select') then 'FIX' else 'OK' end,
+         case when to_regprocedure('public.patient_check_pin(integer, text)') is null then 'File 011 has not been run, so patients cannot sign in with a PIN yet' else 'PINs are stored scrambled and checked only on the server' end
+
   union all
   select 9, 'The access log cannot be edited or erased',
          case when count(*) >= 2 then 'OK' else 'FIX' end, count(*) || ' protective triggers on audit_log'

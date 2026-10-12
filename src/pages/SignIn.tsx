@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Field, { Notice } from '../components/Field';
 import { STAFF_IDLE_MINUTES, friendlyError, portalPath, useAuth, wasSignedOutForIdleness } from '../lib/auth';
+import { telHref, type ClinicSettings } from '../lib/clinic';
+import { pinProblem, pinSignIn } from '../lib/patientLogin';
 import { supabase } from '../lib/supabase';
 import { btnOutline, btnPrimary, card, pageTitle, textLink } from '../lib/ui';
 
@@ -12,7 +14,7 @@ const tabLook = (active: boolean) =>
     active ? 'bg-sage-600 text-white' : 'text-sage-700 hover:bg-sage-50'
   }`;
 
-export default function SignIn() {
+export default function SignIn({ settings }: { settings: ClinicSettings }) {
   const { profile, loading } = useAuth();
   const navigate = useNavigate();
   const [idle] = useState(wasSignedOutForIdleness);
@@ -49,10 +51,121 @@ export default function SignIn() {
               Clinic staff
             </button>
           </div>
-          <div className={`${card} mt-5`}>{tab === 'patient' ? <PatientSignIn /> : <StaffSignIn />}</div>
+          <div className={`${card} mt-5`}>{tab === 'patient' ? <PatientPinSignIn settings={settings} /> : <StaffSignIn />}</div>
         </>
       )}
     </main>
+  );
+}
+
+/** A large box for numbers, easy to read and to tap on a phone. */
+/**
+ * Patients: patient number and 6-digit PIN. First time (or a forgotten PIN):
+ * patient number, the setup code from the clinic desk, and a new PIN.
+ * If the clinic has switched SMS codes on, that way is offered too.
+ */
+function PatientPinSignIn({ settings }: { settings: ClinicSettings }) {
+  const [mode, setMode] = useState<'pin' | 'setup' | 'sms'>('pin');
+  const [patientNo, setPatientNo] = useState('');
+  const [pin, setPin] = useState('');
+  const [code, setCode] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [again, setAgain] = useState('');
+  const [show, setShow] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const digits = (v: string, n: number) => v.replace(/\D/g, '').slice(0, n);
+
+  function switchTo(next: 'pin' | 'setup' | 'sms') {
+    setMode(next);
+    setErrors({});
+    setFormError('');
+    setPin('');
+    setCode('');
+    setNewPin('');
+    setAgain('');
+  }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setFormError('');
+    const found: Record<string, string> = {};
+    if (!/^\d{1,8}$/.test(patientNo)) found.patientNo = 'Enter the patient number from your clinic slip.';
+    if (mode === 'pin' && !/^\d{6}$/.test(pin)) found.pin = 'Enter your 6-digit PIN.';
+    if (mode === 'setup') {
+      if (!/^\d{6}$/.test(code)) found.code = 'Enter the 6-digit setup code from your slip.';
+      const problem = pinProblem(newPin);
+      if (problem) found.newPin = problem;
+      else if (again !== newPin) found.again = 'The two PINs are not the same. Type the new PIN again.';
+    }
+    setErrors(found);
+    if (Object.keys(found).length) return;
+    setBusy(true);
+    try {
+      if (mode === 'pin') await pinSignIn({ action: 'pin', patient_no: patientNo, pin });
+      else await pinSignIn({ action: 'setup', patient_no: patientNo, setup_code: code, new_pin: newPin });
+      // On success the page moves to the patient portal by itself.
+    } catch (failure) {
+      setFormError((failure as Error).message);
+      setPin('');
+    }
+    setBusy(false);
+  }
+
+  if (mode === 'sms') {
+    return (
+      <div className="space-y-4">
+        <PatientSignIn />
+        <button type="button" className={`${btnOutline} w-full`} onClick={() => switchTo('pin')}>
+          Sign in with patient number and PIN
+        </button>
+      </div>
+    );
+  }
+
+  const pinType = show ? 'text' : 'password';
+  return (
+    <form onSubmit={submit} noValidate className="space-y-5">
+      <p className="text-muted">
+        {mode === 'pin'
+          ? 'Use the patient number on your clinic slip and your 6-digit PIN.'
+          : 'First time, or forgot your PIN? Use the setup code the clinic gave you, then choose a new 6-digit PIN.'}
+      </p>
+      <Field label="Patient number" inputMode="numeric" autoComplete="username" className="" value={patientNo} error={errors.patientNo} onChange={(e) => setPatientNo(digits(e.target.value, 8))} style={{ letterSpacing: '0.15em' }} />
+      {mode === 'pin' ? (
+        <Field label="PIN" type={pinType} inputMode="numeric" autoComplete="current-password" value={pin} error={errors.pin} onChange={(e) => setPin(digits(e.target.value, 6))} />
+      ) : (
+        <>
+          <Field label="Setup code from the clinic" inputMode="numeric" autoComplete="one-time-code" value={code} error={errors.code} onChange={(e) => setCode(digits(e.target.value, 6))} />
+          <Field label="Choose a new 6-digit PIN" hint="Not all the same digit, and not 123456" type={pinType} inputMode="numeric" autoComplete="new-password" value={newPin} error={errors.newPin} onChange={(e) => setNewPin(digits(e.target.value, 6))} />
+          <Field label="Type the new PIN again" type={pinType} inputMode="numeric" autoComplete="new-password" value={again} error={errors.again} onChange={(e) => setAgain(digits(e.target.value, 6))} />
+        </>
+      )}
+      <label className="flex min-h-11 items-center gap-3 text-ink">
+        <input type="checkbox" className="h-5 w-5 accent-[var(--brand-primary)]" checked={show} onChange={(e) => setShow(e.target.checked)} />
+        Show the PIN while typing
+      </label>
+      {formError && <Notice kind="error">{formError}</Notice>}
+      <button type="submit" disabled={busy} className={`${btnPrimary} w-full`}>
+        {busy ? 'Please wait…' : mode === 'pin' ? 'Sign in' : 'Save PIN and sign in'}
+      </button>
+      <button type="button" className={`${btnOutline} w-full`} onClick={() => switchTo(mode === 'pin' ? 'setup' : 'pin')}>
+        {mode === 'pin' ? 'First time or forgot PIN?' : 'I already have a PIN'}
+      </button>
+      <p className="text-[0.95rem] text-muted">
+        No patient number yet? Ask at the clinic, or call{' '}
+        <a href={telHref(settings.phone_primary)} className={textLink}>
+          {settings.phone_primary}
+        </a>
+        . You can also book an appointment without signing in by calling the clinic.
+      </p>
+      {settings.sms_login && (
+        <button type="button" className={`${textLink} text-[0.95rem]`} onClick={() => switchTo('sms')}>
+          Sign in with an SMS code instead
+        </button>
+      )}
+    </form>
   );
 }
 
