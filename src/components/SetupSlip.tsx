@@ -35,29 +35,52 @@ export default function SetupSlip({ settings, patientName, patientNo, setupCode,
         </div>
       </header>
       <h2 id="slip-title" className="font-display text-2xl print:mt-4">
-        Sign-in slip for {patientName}
+        Sign-in slip for {patientName} · <span lang="mr">साइन इन स्लिप</span>
       </h2>
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl bg-sage-50 p-4">
-          <dt className="text-muted">Patient number</dt>
+          <dt className="text-muted">
+            Patient number · <span lang="mr">रुग्ण क्रमांक</span>
+          </dt>
           <dd className="font-display text-4xl tracking-wider text-ink">{patientNo}</dd>
-          <dd className="text-[0.95rem] text-muted">Keep this. It is the same every time.</dd>
+          <dd className="text-[0.95rem] text-muted">
+            Keep this. It is the same every time. · <span lang="mr">हा जपून ठेवा. तो कायम तोच राहतो.</span>
+          </dd>
         </div>
         <div className="rounded-2xl bg-lavender-100 p-4">
-          <dt className="text-muted">Setup code (use once)</dt>
+          <dt className="text-muted">
+            Setup code (use once) · <span lang="mr">सेटअप कोड (एकदाच वापरा)</span>
+          </dt>
           <dd className="font-display text-4xl tracking-[0.2em] text-ink">{setupCode}</dd>
           <dd className="text-[0.95rem] text-muted">Valid until {formatDate(dayOf(expiresAt, settings.timezone))}</dd>
         </div>
       </dl>
-      <ol className="mt-5 list-decimal space-y-1.5 pl-6 text-ink">
+      <ol className="mt-5 list-decimal space-y-2.5 pl-6 text-ink">
         <li>
           On your phone, open <span className="font-semibold">{site}</span>
+          <span lang="mr" className="block text-muted">
+            फोनवर <span className="font-semibold">{site}</span> उघडा
+          </span>
         </li>
-        <li>Tap Sign in, then Patient, then First time or forgot PIN</li>
-        <li>Type your patient number and this setup code</li>
-        <li>Choose your own 6-digit PIN. Next time you only need your patient number and PIN</li>
+        <li>
+          Tap Sign in, then Patient, then First time or forgot PIN
+          <span lang="mr" className="block text-muted">साइन इन, नंतर रुग्ण, नंतर "पहिल्यांदा / PIN विसरलात?" वर टॅप करा</span>
+        </li>
+        <li>
+          Type your patient number and this setup code
+          <span lang="mr" className="block text-muted">तुमचा रुग्ण क्रमांक आणि हा सेटअप कोड टाका</span>
+        </li>
+        <li>
+          Choose your own 6-digit PIN. Next time you only need your patient number and PIN
+          <span lang="mr" className="block text-muted">तुमचा स्वतःचा 6 अंकी PIN निवडा. पुढच्या वेळी फक्त रुग्ण क्रमांक आणि PIN लागेल</span>
+        </li>
       </ol>
-      <p className="mt-4 text-[0.95rem] text-muted">Keep your PIN secret. Clinic staff will never ask for it. If you forget it, ask at the clinic for a new setup code.</p>
+      <p className="mt-4 text-[0.95rem] text-muted">
+        Keep your PIN secret. Clinic staff will never ask for it. If you forget it, ask at the clinic for a new setup code.
+      </p>
+      <p lang="mr" className="text-[0.95rem] text-muted">
+        तुमचा PIN कोणालाही सांगू नका. क्लिनिकचे कर्मचारी तो कधीही विचारणार नाहीत. PIN विसरलात तर क्लिनिककडून नवीन सेटअप कोड घ्या.
+      </p>
       <div className="no-print mt-5 flex flex-col gap-3 sm:flex-row">
         <button className={btnPrimary} onClick={print}>
           Print slip

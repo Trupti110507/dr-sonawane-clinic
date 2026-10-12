@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import { dayOf } from '../lib/appointments';
 import { friendlyError } from '../lib/auth';
 import { formatDate } from '../lib/clinic';
-import { CONSENT_WORDING, PHOTO_BUCKET, byArea, openPhoto, prepareImage, signedLinks, type PhotoSet } from '../lib/photos';
+import { CONSENT_WORDING, CONSENT_WORDING_MR, PHOTO_BUCKET, byArea, openPhoto, prepareImage, signedLinks, type PhotoSet } from '../lib/photos';
 import { supabase } from '../lib/supabase';
 import { btnDanger, btnOutline, btnPrimary, btnSmall, card, inputBox } from '../lib/ui';
 import Field, { Notice } from './Field';
@@ -115,7 +115,7 @@ export default function DoctorPhotos({ patientId, patientName, today, timezone }
               onSubmit={(e: FormEvent) => {
                 e.preventDefault();
                 if (!agreed) return setError('Tick the box to confirm that the patient has agreed.');
-                void run('record_photo_consent', { p_patient_id: patientId, p_confirm: true, p_wording: CONSENT_WORDING }, 'Consent recorded. You can now add photos.');
+                void run('record_photo_consent', { p_patient_id: patientId, p_confirm: true, p_wording: `${CONSENT_WORDING}\n\n${CONSENT_WORDING_MR}` }, 'Consent recorded. You can now add photos.');
               }}
             >
               <h3 className="text-[1.05rem] font-bold text-ink">Consent is needed before any photo</h3>
@@ -123,6 +123,8 @@ export default function DoctorPhotos({ patientId, patientName, today, timezone }
                 {patientName} can agree in their own portal, under Photos. Or read this wording to them now and record their answer:
               </p>
               <blockquote className="rounded-xl bg-sage-50 p-4 text-ink">{CONSENT_WORDING}</blockquote>
+              <p className="text-[0.95rem] text-muted">In Marathi, to read to the patient:</p>
+              <blockquote lang="mr" className="rounded-xl bg-sage-50 p-4 text-ink">{CONSENT_WORDING_MR}</blockquote>
               <div className="flex items-start gap-3">
                 <input id={agreeId} type="checkbox" className="mt-1 h-5 w-5 accent-[var(--brand-primary)]" checked={agreed} onChange={(e) => { setError(''); setAgreed(e.target.checked); }} />
                 <label htmlFor={agreeId} className="text-ink">

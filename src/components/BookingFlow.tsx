@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { btnOutline, btnPrimary, card } from '../lib/ui';
 import { Notice } from './Field';
 import SlotPicker from './SlotPicker';
+import { tr } from '../lib/i18n';
 
 interface Props {
   clinic: ClinicData;
@@ -65,18 +66,18 @@ export default function BookingFlow({ clinic, forPatient, fixedDoctorId, followU
   if (done && service) {
     return (
       <div className={card} role="status">
-        <h2 className="font-display text-2xl text-ink">{followUp ? 'Follow-up booked' : 'Appointment booked'}</h2>
+        <h2 className="font-display text-2xl text-ink">{followUp ? 'Follow-up booked' : tr('Appointment booked', 'अपॉइंटमेंट बुक झाली')}</h2>
         <dl className="mt-4 space-y-2">
-          <Row label="When" value={`${formatDate(dayOf(slot, settings.timezone))}, ${timeOf(slot, settings.timezone)}`} />
+          <Row label={tr('When', 'वेळ')} value={`${formatDate(dayOf(slot, settings.timezone))}, ${timeOf(slot, settings.timezone)}`} />
           {forPatient && <Row label="Patient" value={forPatient.name} />}
-          <Row label="Doctor" value={doctor?.full_name ?? 'Your doctor'} />
-          <Row label="Service" value={`${service.name}, about ${service.duration_minutes} minutes`} />
-          <Row label="Fee" value={`${formatInr(service.price_inr)}, paid at the clinic`} />
-          <Row label="Where" value={`${settings.address}, ${settings.city}`} />
+          <Row label={tr('Doctor', 'डॉक्टर')} value={doctor?.full_name ?? tr('Your doctor', 'तुमचे डॉक्टर')} />
+          <Row label={tr('Service', 'सेवा')} value={`${service.name}, ${tr(`about ${service.duration_minutes} minutes`, `सुमारे ${service.duration_minutes} मिनिटे`)}`} />
+          <Row label={tr('Fee', 'शुल्क')} value={`${formatInr(service.price_inr)}, ${tr('paid at the clinic', 'क्लिनिकमध्ये भरायचे')}`} />
+          <Row label={tr('Where', 'ठिकाण')} value={`${settings.address}, ${settings.city}`} />
         </dl>
         {!forPatient && (
           <p className="mt-4 text-muted">
-            Please arrive 10 minutes early. To change this, open My appointments or call{' '}
+            {tr('Please arrive 10 minutes early. To change this, open My appointments or call', "कृपया 10 मिनिटे आधी या. बदल करायचा असल्यास 'माझ्या अपॉइंटमेंट' उघडा किंवा फोन करा")}{' '}
             <a className="font-semibold text-sage-700 underline" href={telHref(settings.phone_primary)}>
               {settings.phone_primary}
             </a>
@@ -101,7 +102,7 @@ export default function BookingFlow({ clinic, forPatient, fixedDoctorId, followU
 
       <section aria-labelledby="step-service">
         <h2 id="step-service" className="font-display text-2xl text-ink">
-          1. What is the visit for?
+          {tr('1. What is the visit for?', '1. भेट कशासाठी आहे?')}
         </h2>
         <div className="mt-3 grid gap-3 md:grid-cols-2" role="radiogroup" aria-labelledby="step-service">
           {services.map((s) => (
@@ -119,7 +120,7 @@ export default function BookingFlow({ clinic, forPatient, fixedDoctorId, followU
               <span>
                 <span className="block font-semibold text-ink">{s.name}</span>
                 {s.description && <span className="block text-[0.95rem] text-muted">{s.description}</span>}
-                <span className="block text-[0.95rem] text-muted">About {s.duration_minutes} minutes</span>
+                <span className="block text-[0.95rem] text-muted">{tr(`About ${s.duration_minutes} minutes`, `सुमारे ${s.duration_minutes} मिनिटे`)}</span>
               </span>
               <span className="shrink-0 font-bold text-ink">{formatInr(s.price_inr)}</span>
             </button>
@@ -130,7 +131,7 @@ export default function BookingFlow({ clinic, forPatient, fixedDoctorId, followU
       {!fixedDoctorId && (
         <section aria-labelledby="step-doctor">
           <h2 id="step-doctor" className="font-display text-2xl text-ink">
-            2. Which doctor?
+            {tr('2. Which doctor?', '2. कोणते डॉक्टर?')}
           </h2>
           <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3" role="radiogroup" aria-labelledby="step-doctor">
             {doctors.map((d) => (
@@ -158,7 +159,7 @@ export default function BookingFlow({ clinic, forPatient, fixedDoctorId, followU
       {serviceId && doctorId && (
         <section aria-labelledby="step-time">
           <h2 id="step-time" className="font-display text-2xl text-ink">
-            {fixedDoctorId ? '2' : '3'}. When?
+            {fixedDoctorId ? '2' : '3'}. {tr('When?', 'कधी?')}
           </h2>
           <div className="mt-3">
             <SlotPicker clinic={clinic} doctorId={doctorId} serviceId={serviceId} value={slot} onChange={setSlot} refreshKey={refreshKey} />
@@ -171,21 +172,21 @@ export default function BookingFlow({ clinic, forPatient, fixedDoctorId, followU
       {slot && service && (
         <section className={card} aria-labelledby="step-confirm">
           <h2 id="step-confirm" className="font-display text-2xl text-ink">
-            {fixedDoctorId ? '3' : '4'}. Check and confirm
+            {fixedDoctorId ? '3' : '4'}. {tr('Check and confirm', 'तपासा आणि निश्चित करा')}
           </h2>
           <dl className="mt-4 space-y-2">
-            <Row label="When" value={`${formatDate(dayOf(slot, settings.timezone))}, ${timeOf(slot, settings.timezone)}`} />
-            <Row label="Doctor" value={doctor?.full_name ?? 'Your doctor'} />
-            <Row label="Service" value={service.name} />
-            <Row label="Fee" value={`${formatInr(service.price_inr)}, paid at the clinic`} />
+            <Row label={tr('When', 'वेळ')} value={`${formatDate(dayOf(slot, settings.timezone))}, ${timeOf(slot, settings.timezone)}`} />
+            <Row label={tr('Doctor', 'डॉक्टर')} value={doctor?.full_name ?? tr('Your doctor', 'तुमचे डॉक्टर')} />
+            <Row label={tr('Service', 'सेवा')} value={service.name} />
+            <Row label={tr('Fee', 'शुल्क')} value={`${formatInr(service.price_inr)}, ${tr('paid at the clinic', 'क्लिनिकमध्ये भरायचे')}`} />
           </dl>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button className={btnPrimary} disabled={busy} onClick={() => void confirm()}>
-              {busy ? 'Booking…' : 'Confirm appointment'}
+              {busy ? tr('Booking…', 'बुक होत आहे…') : tr('Confirm appointment', 'अपॉइंटमेंट निश्चित करा')}
             </button>
             {onClose && (
               <button className={btnOutline} onClick={onClose}>
-                Cancel
+                {tr('Cancel', 'रद्द करा')}
               </button>
             )}
           </div>

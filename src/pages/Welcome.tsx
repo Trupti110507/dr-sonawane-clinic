@@ -12,6 +12,7 @@ import {
   weekdayName,
   type ClinicData,
 } from '../lib/clinic';
+import { tr } from '../lib/i18n';
 
 // Shared button looks. One filled button per area; the rest are outlined.
 const btnPrimary =
@@ -79,21 +80,21 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
             {/* On phones these two actions live in the fixed bar at the bottom */}
             <div className="mt-8 hidden gap-3 md:flex">
               <Link to="/book" className={btnPrimary}>
-                Book appointment
+                {tr('Book appointment', 'अपॉइंटमेंट बुक करा')}
               </Link>
               <a href={telHref(settings.phone_primary)} className={btnOutline}>
                 <PhoneIcon />
-                Call {settings.phone_primary}
+                {tr(`Call ${settings.phone_primary}`, `${settings.phone_primary} वर कॉल करा`)}
               </a>
             </div>
           </div>
 
           {/* The "today" panel: the one strong block on the page */}
           <aside
-            aria-label="Today at the clinic"
+            aria-label={tr('Today at the clinic', 'आज क्लिनिकमध्ये')}
             className="rounded-[28px] bg-sage-900 p-6 text-white sm:p-8"
           >
-            <p className="text-[0.95rem] text-sage-200">Today, {weekdayName(status.weekday)}</p>
+            <p className="text-[0.95rem] text-sage-200">{tr('Today', 'आज')}, {weekdayName(status.weekday)}</p>
             <p className="mt-2 flex items-center gap-3 font-display text-3xl sm:text-4xl">
               <span
                 aria-hidden="true"
@@ -111,7 +112,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
                   <div key={from} className="flex justify-between gap-4">
                     <dt className="text-sage-200">{sessionLabel(from)}</dt>
                     <dd className="font-semibold">
-                      {formatTime(from)} to {formatTime(to)}
+                      {formatTime(from)} {tr('to', 'ते')} {formatTime(to)}
                     </dd>
                   </div>
                 ))}
@@ -133,7 +134,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
               href="#visit"
               className="mt-6 inline-flex min-h-11 items-center font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white"
             >
-              See all clinic hours
+              {tr('See all clinic hours', 'क्लिनिकच्या सर्व वेळा पहा')}
             </a>
           </aside>
         </div>
@@ -142,10 +143,13 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
       {/* ---------- Services and fees ---------- */}
       <section aria-labelledby="services" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
         <h2 id="services" className={sectionTitle}>
-          Services and fees
+          {tr('Services and fees', 'सेवा आणि शुल्क')}
         </h2>
         <p className="mt-3 max-w-2xl text-muted">
-          Fees are paid at the clinic. Procedures are advised only after the doctor has examined you.
+          {tr(
+            'Fees are paid at the clinic. Procedures are advised only after the doctor has examined you.',
+            'शुल्क क्लिनिकमध्ये भरायचे आहे. डॉक्टरांनी तपासणी केल्यानंतरच उपचार प्रक्रिया सुचवल्या जातात.',
+          )}
         </p>
         <div className="mt-10 grid gap-x-16 gap-y-12 md:grid-cols-2">
           {categories.map((category) => (
@@ -164,7 +168,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
                           <p className="mt-0.5 text-[0.95rem] text-muted">{service.description}</p>
                         )}
                         <p className="mt-0.5 text-[0.95rem] text-muted">
-                          About {service.duration_minutes} minutes
+                          {tr(`About ${service.duration_minutes} minutes`, `सुमारे ${service.duration_minutes} मिनिटे`)}
                         </p>
                       </div>
                       <p className="shrink-0 text-[1.05rem] font-bold text-ink">
@@ -182,7 +186,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
       <section aria-labelledby="doctors" className="bg-lavender-100">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
           <h2 id="doctors" className={sectionTitle}>
-            Our doctors
+            {tr('Our doctors', 'आमचे डॉक्टर')}
           </h2>
           <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {doctors.map((doctor) => (
@@ -214,7 +218,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
                   )}
                   {doctor.consultation_fee_inr !== null && (
                     <p className="mt-2 text-[0.95rem] text-muted">
-                      Consultation{' '}
+                      {tr('Consultation', 'तपासणी')}{' '}
                       <span className="font-bold text-ink">
                         {formatInr(doctor.consultation_fee_inr)}
                       </span>
@@ -230,7 +234,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
       {/* ---------- Hours and location ---------- */}
       <section aria-labelledby="visit" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
         <h2 id="visit" className={sectionTitle}>
-          Hours and location
+          {tr('Hours and location', 'वेळा आणि पत्ता')}
         </h2>
         <div className="mt-10 grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
           {/* One block per run of days that share the same hours */}
@@ -246,19 +250,19 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
                     {group.label}
                     {isToday && (
                       <span className="rounded-full bg-lavender-200 px-2 py-0.5 text-sm font-semibold text-lavender-700">
-                        Today
+                        {tr('Today', 'आज')}
                       </span>
                     )}
                   </h3>
                   {group.sessions.length === 0 ? (
-                    <p className="mt-1 text-muted">Closed</p>
+                    <p className="mt-1 text-muted">{tr('Closed', 'बंद')}</p>
                   ) : (
                     <dl className="mt-2 space-y-1">
                       {group.sessions.map(([from, to]) => (
                         <div key={from} className="flex justify-between gap-4">
                           <dt className="text-muted">{sessionLabel(from)}</dt>
                           <dd className="font-semibold text-ink">
-                            {formatTime(from)} to {formatTime(to)}
+                            {formatTime(from)} {tr('to', 'ते')} {formatTime(to)}
                           </dd>
                         </div>
                       ))}
@@ -269,7 +273,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
             })}
             {upcomingHolidays.length > 0 && (
               <div className="px-4 py-5">
-                <h3 className="text-[1.05rem] font-bold text-ink">Closed on these days</h3>
+                <h3 className="text-[1.05rem] font-bold text-ink">{tr('Closed on these days', 'या दिवशी बंद')}</h3>
                 <ul className="mt-2 space-y-1">
                   {upcomingHolidays.map((h) => (
                     <li key={h.holiday_date} className="flex justify-between gap-4">
@@ -283,7 +287,7 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
           </div>
 
           <div>
-            <h3 className="font-display text-2xl text-ink">Find us</h3>
+            <h3 className="font-display text-2xl text-ink">{tr('Find us', 'आमचा पत्ता')}</h3>
             <address className="mt-3 text-[1.05rem] not-italic leading-relaxed text-ink">
               {[settings.name, settings.subtitle].filter(Boolean).join(', ')}
               <br />
@@ -293,10 +297,10 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
             </address>
             <a href={mapUrl} target="_blank" rel="noreferrer" className={`${textLink} mt-2`}>
               <PinIcon />
-              Get directions in Google Maps
+              {tr('Get directions in Google Maps', 'Google Maps मध्ये मार्ग पहा')}
             </a>
 
-            <h3 className="mt-8 font-display text-2xl text-ink">Call the clinic</h3>
+            <h3 className="mt-8 font-display text-2xl text-ink">{tr('Call the clinic', 'क्लिनिकला फोन करा')}</h3>
             <ul className="mt-1">
               {phones.map((phone) => (
                 <li key={phone}>
@@ -340,10 +344,10 @@ export default function Welcome({ clinic }: { clinic: ClinicData }) {
       <div className="fixed inset-x-0 bottom-0 z-40 flex gap-3 border-t border-line bg-white/95 px-4 py-3 backdrop-blur md:hidden">
         <a href={telHref(settings.phone_primary)} className={`${btnOutline} px-6`}>
           <PhoneIcon />
-          Call
+          {tr('Call', 'कॉल')}
         </a>
         <Link to="/book" className={`${btnPrimary} flex-1 whitespace-nowrap px-4`}>
-          Book appointment
+          {tr('Book appointment', 'अपॉइंटमेंट बुक करा')}
         </Link>
       </div>
     </main>

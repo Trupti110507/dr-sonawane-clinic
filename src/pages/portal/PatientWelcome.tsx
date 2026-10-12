@@ -4,6 +4,7 @@ import Field, { FieldError, Notice } from '../../components/Field';
 import { friendlyError, useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import { btnPrimary, card, pageTitle } from '../../lib/ui';
+import { tr } from '../../lib/i18n';
 
 /** First visit only: the patient gives their name and accepts the privacy notice. */
 export default function PatientWelcome({ clinicName }: { clinicName: string }) {
@@ -19,8 +20,8 @@ export default function PatientWelcome({ clinicName }: { clinicName: string }) {
     e.preventDefault();
     setFormError('');
     const next: typeof errors = {};
-    if (name.trim().length < 2) next.name = 'Enter your full name.';
-    if (!consent) next.consent = 'Please tick the box to continue.';
+    if (name.trim().length < 2) next.name = tr('Enter your full name.', 'तुमचे पूर्ण नाव टाका.');
+    if (!consent) next.consent = tr('Please tick the box to continue.', 'पुढे जाण्यासाठी कृपया बॉक्सवर खूण करा.');
     setErrors(next);
     if (Object.keys(next).length || !supabase) return;
     setBusy(true);
@@ -39,10 +40,10 @@ export default function PatientWelcome({ clinicName }: { clinicName: string }) {
 
   return (
     <main id="main" className="mx-auto max-w-lg px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className={pageTitle}>Welcome</h1>
-      <p className="mt-3 text-muted">One quick step before you use your patient account.</p>
+      <h1 className={pageTitle}>{tr('Welcome', 'स्वागत आहे')}</h1>
+      <p className="mt-3 text-muted">{tr('One quick step before you use your patient account.', 'तुमचे रुग्ण खाते वापरण्यापूर्वी एक छोटी पायरी.')}</p>
       <form onSubmit={submit} noValidate className={`${card} mt-6 space-y-5`}>
-        <Field label="Your full name" hint="As you would like it on prescriptions and receipts" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
+        <Field label={tr('Your full name', 'तुमचे पूर्ण नाव')} hint={tr('As you would like it on prescriptions and receipts', 'प्रिस्क्रिप्शन आणि पावतीवर जसे हवे तसे')} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
         <div>
           <label className="flex items-start gap-3">
             <input
@@ -53,15 +54,17 @@ export default function PatientWelcome({ clinicName }: { clinicName: string }) {
               aria-invalid={errors.consent ? true : undefined}
             />
             <span>
-              I agree that {clinicName} may store my contact details and visit records to provide
-              my care. Only I and the clinic staff treating me can see them.
+              {tr(
+                `I agree that ${clinicName} may store my contact details and visit records to provide my care. Only I and the clinic staff treating me can see them.`,
+                `माझ्या उपचारांसाठी ${clinicName} माझी संपर्क माहिती आणि भेटींच्या नोंदी ठेवू शकतात, याला मी संमती देतो/देते. त्या फक्त मी आणि माझ्यावर उपचार करणारे क्लिनिकचे कर्मचारी पाहू शकतात.`,
+              )}
             </span>
           </label>
           {errors.consent && <FieldError>{errors.consent}</FieldError>}
         </div>
         {formError && <Notice kind="error">{formError}</Notice>}
         <button type="submit" disabled={busy} className={`${btnPrimary} w-full`}>
-          {busy ? 'Saving…' : 'Continue'}
+          {busy ? tr('Saving…', 'सेव्ह होत आहे…') : tr('Continue', 'पुढे चला')}
         </button>
       </form>
     </main>

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { btnDanger, btnOutline, btnPrimary, btnSmall, inputBox } from '../lib/ui';
 import { Notice } from './Field';
 import SlotPicker from './SlotPicker';
+import { tr } from '../lib/i18n';
 
 interface Props {
   appointment: Appointment;
@@ -57,7 +58,7 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[1.05rem] font-bold text-ink">
-            {timeOf(a.starts_at, tz)} to {timeOf(a.ends_at, tz)}
+            {timeOf(a.starts_at, tz)} {tr('to', 'ते')} {timeOf(a.ends_at, tz)}
             <span className={`ml-2 rounded-full px-2 py-0.5 align-middle text-sm font-semibold ${STATUS_LOOK[a.status]}`}>
               {STATUS_LABEL[a.status]}
             </span>
@@ -78,10 +79,10 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
           )}
           <p className="text-[0.95rem] text-muted">
             {a.service_name}
-            {a.is_follow_up ? ' (follow-up)' : ''}
+            {a.is_follow_up ? tr(' (follow-up)', ' (पुन्हा तपासणी)') : ''}
             {viewer !== 'doctor' ? `, ${a.doctor_name}` : ''}
           </p>
-          {a.status === 'cancelled' && a.cancel_reason && <p className="text-[0.95rem] text-muted">Reason: {a.cancel_reason}</p>}
+          {a.status === 'cancelled' && a.cancel_reason && <p className="text-[0.95rem] text-muted">{tr('Reason', 'कारण')}: {a.cancel_reason}</p>}
         </div>
 
         {mode === 'idle' && (canChange || canClose || viewer === 'doctor' || (onFollowUp && a.status === 'completed')) && (
@@ -109,10 +110,10 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
             {canChange && (
               <>
                 <button className={btnSmall} onClick={() => { setError(''); setNewSlot(''); setMode('move'); }}>
-                  Reschedule
+                  {tr('Reschedule', 'वेळ बदला')}
                 </button>
                 <button className={btnSmall} onClick={() => { setError(''); setMode('cancel'); }}>
-                  Cancel
+                  {tr('Cancel', 'रद्द करा')}
                 </button>
               </>
             )}
@@ -129,15 +130,15 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
       {mode === 'cancel' && (
         <div className="mt-3 rounded-2xl border border-line bg-sage-50 p-4">
           <label className="block font-semibold text-ink">
-            Reason for cancelling <span className="font-normal text-muted">(optional)</span>
+            {tr('Reason for cancelling', 'रद्द करण्याचे कारण')} <span className="font-normal text-muted">{tr('(optional)', '(ऐच्छिक)')}</span>
             <input className={inputBox} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
           </label>
           <div className="mt-4 flex flex-wrap gap-2">
             <button className={btnDanger} disabled={busy} onClick={() => void run('cancel_appointment', { p_id: a.id, p_reason: reason })}>
-              {busy ? 'Cancelling…' : 'Yes, cancel appointment'}
+              {busy ? tr('Cancelling…', 'रद्द होत आहे…') : tr('Yes, cancel appointment', 'होय, अपॉइंटमेंट रद्द करा')}
             </button>
             <button className={btnSmall} onClick={() => setMode('idle')}>
-              Keep appointment
+              {tr('Keep appointment', 'अपॉइंटमेंट ठेवा')}
             </button>
           </div>
         </div>
@@ -145,7 +146,7 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
 
       {mode === 'move' && (
         <div className="mt-3 rounded-2xl border border-line bg-sage-50 p-4">
-          <p className="mb-3 text-muted">Choose a new day and time with {a.doctor_name}.</p>
+          <p className="mb-3 text-muted">{tr(`Choose a new day and time with ${a.doctor_name}.`, `${a.doctor_name} यांच्यासोबत नवीन दिवस आणि वेळ निवडा.`)}</p>
           <SlotPicker clinic={clinic} doctorId={a.doctor_id} serviceId={a.service_id} excludeId={a.id} value={newSlot} onChange={setNewSlot} refreshKey={refreshKey} />
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <button
@@ -158,10 +159,10 @@ export default function AppointmentItem({ appointment: a, clinic, viewer, showDa
                 })
               }
             >
-              {busy ? 'Moving…' : newSlot ? `Move to ${timeOf(newSlot, tz)}` : 'Choose a time'}
+              {busy ? tr('Moving…', 'बदलत आहे…') : newSlot ? tr(`Move to ${timeOf(newSlot, tz)}`, `${timeOf(newSlot, tz)} ला बदला`) : tr('Choose a time', 'वेळ निवडा')}
             </button>
             <button className={btnOutline} onClick={() => setMode('idle')}>
-              Keep current time
+              {tr('Keep current time', 'सध्याची वेळ ठेवा')}
             </button>
           </div>
         </div>

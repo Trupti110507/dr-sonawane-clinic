@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { portalPath, useAuth } from '../lib/auth';
 import { logoUrl, type ClinicSettings } from '../lib/clinic';
+import { tr } from '../lib/i18n';
+import { useLang } from '../lib/lang';
 
 const navLink =
   'inline-flex min-h-11 items-center rounded-full px-3 text-[0.95rem] font-medium text-ink hover:text-sage-700';
@@ -12,6 +14,18 @@ const pillFilled =
 /** The header shared by every portal: logo, clinic name, navigation, account. */
 export default function SiteHeader({ settings }: { settings: ClinicSettings }) {
   const { profile, session, signOut } = useAuth();
+  const { lang, setLang, canSwitch } = useLang();
+  // Shows the OTHER language, written in that language, so a reader of it can find it.
+  const switcher = canSwitch && (
+    <button
+      className={pillOutline}
+      lang={lang === 'en' ? 'mr' : 'en'}
+      aria-label={lang === 'en' ? 'मराठीत पहा (View in Marathi)' : 'View in English (इंग्रजीत पहा)'}
+      onClick={() => setLang(lang === 'en' ? 'mr' : 'en')}
+    >
+      {lang === 'en' ? 'मराठी' : 'English'}
+    </button>
+  );
   const navigate = useNavigate();
 
   return (
@@ -35,19 +49,20 @@ export default function SiteHeader({ settings }: { settings: ClinicSettings }) {
         {!session && (
           <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
             <a href="/#services" className={navLink}>
-              Services and fees
+              {tr('Services and fees', 'सेवा आणि शुल्क')}
             </a>
             <a href="/#doctors" className={navLink}>
-              Doctors
+              {tr('Doctors', 'डॉक्टर')}
             </a>
             <a href="/#visit" className={navLink}>
-              Hours and location
+              {tr('Hours and location', 'वेळा आणि पत्ता')}
             </a>
           </nav>
         )}
 
         {session ? (
           <div className="flex shrink-0 items-center gap-2">
+            {switcher}
             {profile?.full_name && (
               <span className="hidden max-w-[14rem] truncate text-[0.95rem] text-muted md:block">
                 {profile.full_name}
@@ -55,7 +70,7 @@ export default function SiteHeader({ settings }: { settings: ClinicSettings }) {
             )}
             {profile && (
               <Link to={portalPath(profile.role)} className={`${pillFilled} hidden sm:inline-flex`}>
-                My portal
+                {tr('My portal', 'माझे पोर्टल')}
               </Link>
             )}
             <button
@@ -66,16 +81,17 @@ export default function SiteHeader({ settings }: { settings: ClinicSettings }) {
                 void signOut();
               }}
             >
-              Sign out
+              {tr('Sign out', 'साइन आउट')}
             </button>
           </div>
         ) : (
           <div className="flex shrink-0 items-center gap-2">
+            {switcher}
             <Link to="/sign-in" className={pillOutline}>
-              Sign in
+              {tr('Sign in', 'साइन इन')}
             </Link>
             <Link to="/book" className={`${pillFilled} hidden md:inline-flex`}>
-              Book appointment
+              {tr('Book appointment', 'अपॉइंटमेंट बुक करा')}
             </Link>
           </div>
         )}

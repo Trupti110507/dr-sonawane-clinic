@@ -1,3 +1,5 @@
+import { tr } from './i18n';
+
 /** One consultation note, as returned inside get_patient_record. */
 export interface Visit {
   id: string;
@@ -85,7 +87,15 @@ export interface TreatmentPlan {
   started_on: string;
 }
 
-export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = { active: 'In progress', completed: 'Completed', stopped: 'Stopped' };
+const PLAN_STATUS_TEXT: Record<PlanStatus, [string, string]> = {
+  active: ['In progress', 'सुरू आहे'],
+  completed: ['Completed', 'पूर्ण'],
+  stopped: ['Stopped', 'थांबवली'],
+};
+/** Plan status names in the language chosen. */
+export const PLAN_STATUS_LABEL = new Proxy({} as Record<PlanStatus, string>, {
+  get: (_, key: string) => (PLAN_STATUS_TEXT[key as PlanStatus] ? tr(...PLAN_STATUS_TEXT[key as PlanStatus]) : undefined),
+});
 
 /** Whole years between a date of birth and today. */
 export function ageFrom(dateOfBirth: string | null, today: string): number | null {

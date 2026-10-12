@@ -1,5 +1,20 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { tr } from '../lib/i18n';
+
+/** Marathi names for the patient menu (staff menus stay in English). */
+const MARATHI: Record<string, string> = {
+  'Patient portal': 'रुग्ण पोर्टल',
+  Home: 'मुख्यपृष्ठ',
+  'My appointments': 'माझ्या अपॉइंटमेंट',
+  'My visits': 'माझ्या भेटी',
+  Prescriptions: 'प्रिस्क्रिप्शन',
+  'Treatment plans': 'उपचार योजना',
+  Photos: 'फोटो',
+  Payments: 'पेमेंट',
+  'My profile': 'माझी माहिती',
+};
+const say = (text: string) => (MARATHI[text] ? tr(text, MARATHI[text]) : text);
 
 export interface PortalLink {
   to: string;
@@ -21,11 +36,11 @@ export default function PortalShell({ label, links, children }: { label: string;
   }, [pathname]);
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[13rem_1fr] lg:gap-10 lg:py-10">
-      <nav ref={nav} aria-label={label} className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-3 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0">
-        <p className="hidden px-4 pb-2 text-[0.95rem] text-muted lg:block">{label}</p>
+      <nav ref={nav} aria-label={say(label)} className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-3 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0">
+        <p className="hidden px-4 pb-2 text-[0.95rem] text-muted lg:block">{say(label)}</p>
         {links.map((l) => (
           <NavLink key={l.to} to={l.to} end className={look}>
-            {l.label}
+            {say(l.label)}
           </NavLink>
         ))}
       </nav>

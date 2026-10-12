@@ -4,6 +4,7 @@ import PortalShell, { PATIENT_LINKS } from '../../components/PortalShell';
 import { friendlyError, useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import { btnPrimary, card, inputBox, pageTitle } from '../../lib/ui';
+import { tr } from '../../lib/i18n';
 
 interface Form {
   full_name: string;
@@ -56,10 +57,10 @@ export default function PatientProfile() {
     if (!form || !supabase) return;
     setResult(null);
     const next: typeof errors = {};
-    if (form.full_name.trim().length < 2) next.full_name = 'Enter your full name.';
-    if (form.date_of_birth && form.date_of_birth > today()) next.date_of_birth = 'Date of birth cannot be in the future.';
+    if (form.full_name.trim().length < 2) next.full_name = tr('Enter your full name.', 'तुमचे पूर्ण नाव टाका.');
+    if (form.date_of_birth && form.date_of_birth > today()) next.date_of_birth = tr('Date of birth cannot be in the future.', 'जन्मतारीख भविष्यातील असू शकत नाही.');
     if (form.emergency_contact_phone && !/^[6-9]\d{9}$/.test(form.emergency_contact_phone))
-      next.emergency_contact_phone = 'Enter a 10-digit mobile number.';
+      next.emergency_contact_phone = tr('Enter a 10-digit mobile number.', '10 अंकी मोबाइल नंबर टाका.');
     setErrors(next);
     if (Object.keys(next).length) return;
     setBusy(true);
@@ -77,55 +78,55 @@ export default function PatientProfile() {
       return;
     }
     await refreshProfile();
-    setResult({ kind: 'success', text: 'Your profile has been saved.' });
+    setResult({ kind: 'success', text: tr('Your profile has been saved.', 'तुमची माहिती सेव्ह झाली.') });
   }
 
   return (
     <PortalShell label="Patient portal" links={PATIENT_LINKS}>
-      <h1 className={pageTitle}>My profile</h1>
+      <h1 className={pageTitle}>{tr('My profile', 'माझी माहिती')}</h1>
       {!form ? (
-        <p role="status" className="mt-6 text-muted">Loading your profile…</p>
+        <p role="status" className="mt-6 text-muted">{tr('Loading your profile…', 'तुमची माहिती लोड होत आहे…')}</p>
       ) : (
         <form onSubmit={submit} noValidate className={`${card} mt-6 max-w-2xl space-y-5`}>
           <p className="text-muted">
             {patientNo !== null && (
               <>
-                Patient number: <span className="font-semibold text-ink">{patientNo}</span>.{' '}
+                {tr('Patient number', 'रुग्ण क्रमांक')}: <span className="font-semibold text-ink">{patientNo}</span>.{' '}
               </>
             )}
             {profile?.phone ? (
               <>
-                Mobile number: <span className="font-semibold text-ink">+{profile.phone}</span>.{' '}
+                {tr('Mobile number', 'मोबाइल नंबर')}: <span className="font-semibold text-ink">+{profile.phone}</span>.{' '}
               </>
             ) : null}
-            To change these, or your PIN, please ask at the clinic.
+            {tr('To change these, or your PIN, please ask at the clinic.', 'हे किंवा तुमचा PIN बदलायचा असल्यास क्लिनिकमध्ये विचारा.')}
           </p>
-          <Field label="Full name" autoComplete="name" value={form.full_name} onChange={set('full_name')} error={errors.full_name} />
+          <Field label={tr('Full name', 'पूर्ण नाव')} autoComplete="name" value={form.full_name} onChange={set('full_name')} error={errors.full_name} />
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Date of birth" type="date" max={today()} value={form.date_of_birth} onChange={set('date_of_birth')} error={errors.date_of_birth} />
+            <Field label={tr('Date of birth', 'जन्मतारीख')} type="date" max={today()} value={form.date_of_birth} onChange={set('date_of_birth')} error={errors.date_of_birth} />
             <div>
               <label htmlFor={genderId} className="block font-semibold text-ink">
-                Gender
+                {tr('Gender', 'लिंग')}
               </label>
               <select id={genderId} className={inputBox} value={form.gender} onChange={set('gender')}>
-                <option value="">Select</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-                <option value="prefer_not_to_say">Prefer not to say</option>
+                <option value="">{tr('Select', 'निवडा')}</option>
+                <option value="female">{tr('Female', 'स्त्री')}</option>
+                <option value="male">{tr('Male', 'पुरुष')}</option>
+                <option value="other">{tr('Other', 'इतर')}</option>
+                <option value="prefer_not_to_say">{tr('Prefer not to say', 'सांगायचे नाही')}</option>
               </select>
             </div>
           </div>
           <div>
             <label htmlFor={addressId} className="block font-semibold text-ink">
-              Address
+              {tr('Address', 'पत्ता')}
             </label>
             <textarea id={addressId} rows={3} maxLength={300} className={`${inputBox} py-3`} value={form.address} onChange={set('address')} />
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Emergency contact name" value={form.emergency_contact_name} onChange={set('emergency_contact_name')} />
+            <Field label={tr('Emergency contact name', 'आपत्कालीन संपर्क व्यक्तीचे नाव')} value={form.emergency_contact_name} onChange={set('emergency_contact_name')} />
             <Field
-              label="Emergency contact mobile"
+              label={tr('Emergency contact mobile', 'आपत्कालीन संपर्क मोबाइल')}
               prefix="+91"
               inputMode="numeric"
               maxLength={10}
@@ -136,7 +137,7 @@ export default function PatientProfile() {
           </div>
           {result && <Notice kind={result.kind}>{result.text}</Notice>}
           <button type="submit" disabled={busy} className={btnPrimary}>
-            {busy ? 'Saving…' : 'Save profile'}
+            {busy ? tr('Saving…', 'सेव्ह होत आहे…') : tr('Save profile', 'माहिती सेव्ह करा')}
           </button>
         </form>
       )}

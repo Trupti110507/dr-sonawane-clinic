@@ -7,6 +7,7 @@ import { formatDate } from '../../lib/clinic';
 import { PLAN_STATUS_LABEL, type TreatmentPlan } from '../../lib/records';
 import { supabase } from '../../lib/supabase';
 import { card, pageTitle } from '../../lib/ui';
+import { tr } from '../../lib/i18n';
 
 /** The patient's own treatment plans: sessions done and the doctor's instructions. */
 export default function PatientTreatment() {
@@ -22,16 +23,16 @@ export default function PatientTreatment() {
 
   return (
     <PortalShell label="Patient portal" links={PATIENT_LINKS}>
-      <h1 className={pageTitle}>Treatment plans</h1>
+      <h1 className={pageTitle}>{tr('Treatment plans', 'उपचार योजना')}</h1>
       {error && (
         <div className="mt-6 max-w-3xl">
           <Notice kind="error">{error}</Notice>
         </div>
       )}
       {rows === null ? (
-        <p role="status" className="mt-6 text-muted">Loading your treatment plans…</p>
+        <p role="status" className="mt-6 text-muted">{tr('Loading your treatment plans…', 'तुमच्या उपचार योजना लोड होत आहेत…')}</p>
       ) : rows.length === 0 ? (
-        !error && <p className="mt-6 text-muted">You have no treatment plans. Your doctor adds one when a treatment runs over several sessions.</p>
+        !error && <p className="mt-6 text-muted">{tr('You have no treatment plans. Your doctor adds one when a treatment runs over several sessions.', 'तुमची कोणतीही उपचार योजना नाही. उपचार अनेक सत्रांचा असेल तर डॉक्टर ती तयार करतात.')}</p>
       ) : (
         <ul className="mt-6 max-w-3xl space-y-4">
           {rows.map((p) => (
@@ -40,7 +41,7 @@ export default function PatientTreatment() {
                 <div>
                   <h2 className="text-[1.05rem] font-bold text-ink">{p.title}</h2>
                   <p className="text-[0.95rem] text-muted">
-                    {p.doctor_name}, started {formatDate(p.started_on)}
+                    {p.doctor_name}, {tr('started', 'सुरुवात')} {formatDate(p.started_on)}
                   </p>
                 </div>
                 <span className={`self-start rounded-full px-3 py-1 text-[0.95rem] font-semibold ${p.status === 'active' ? 'bg-sage-100 text-sage-900' : 'bg-white text-muted ring-1 ring-line'}`}>
@@ -50,7 +51,7 @@ export default function PatientTreatment() {
               <SessionProgress done={p.sessions_done} total={p.total_sessions} />
               {p.patient_instructions && (
                 <div className="mt-3">
-                  <p className="text-[0.95rem] text-muted">Your doctor's instructions</p>
+                  <p className="text-[0.95rem] text-muted">{tr("Your doctor's instructions", 'डॉक्टरांच्या सूचना')}</p>
                   <p className="whitespace-pre-wrap text-ink">{p.patient_instructions}</p>
                 </div>
               )}

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { currentLang, tr } from './i18n';
 
 export type Role = 'patient' | 'doctor' | 'admin';
 
@@ -129,14 +130,35 @@ export function useAuth(): AuthState {
   return ctx;
 }
 
+/** Marathi wording for the database messages a patient can meet. Others stay in English. */
+const MARATHI_ERRORS: Record<string, string> = {
+  WRONG_PIN: 'रुग्ण क्रमांक किंवा PIN बरोबर नाही.',
+  WRONG_CODE: 'रुग्ण क्रमांक किंवा सेटअप कोड बरोबर नाही. क्लिनिकची स्लिप तपासा.',
+  LOCKED: 'खूप चुकीचे प्रयत्न झाले. 30 मिनिटांनी पुन्हा प्रयत्न करा, किंवा क्लिनिककडून नवीन सेटअप कोड घ्या.',
+  CODE_EXPIRED: 'हा सेटअप कोड कालबाह्य झाला आहे. क्लिनिककडून नवीन कोड घ्या.',
+  BUSY: 'या वेबसाइटवर नुकतेच खूप चुकीचे प्रयत्न झाले. कृपया 15 मिनिटांनी पुन्हा प्रयत्न करा.',
+  INVALID_PIN: 'PIN बरोबर 6 अंकांचा असावा.',
+  WEAK_PIN: 'हा PIN अंदाज लावायला खूप सोपा आहे. सर्व अंक सारखे किंवा क्रमाने नसलेले 6 अंक निवडा.',
+  INVALID_NUMBER: 'क्लिनिकच्या स्लिपवरील रुग्ण क्रमांक टाका.',
+  SLOT_TAKEN: 'ही वेळ आत्ताच दुसऱ्या कोणी घेतली. कृपया दुसरी वेळ निवडा.',
+  ALREADY_PAID: 'या अपॉइंटमेंटचे पैसे आधीच भरले आहेत.',
+  ONLINE_OFF: 'ऑनलाइन पेमेंट सध्या उपलब्ध नाही. कृपया क्लिनिकमध्ये भरा.',
+  CONSENT_REQUIRED: 'पुढे जाण्यासाठी संमतीच्या बॉक्सवर खूण करा.',
+};
+
 /**
  * Turns a technical error from Supabase into a sentence a patient or
  * staff member can act on. Database functions raise "CODE: message".
  */
 export function friendlyError(error: unknown): string {
   const raw = (error as { message?: string } | null)?.message ?? String(error ?? '');
-  const coded = raw.match(/^[A-Z_]+: (.+)$/);
-  if (coded) return coded[1].charAt(0).toUpperCase() + coded[1].slice(1) + '.';
+  const coded = raw.match(/^([A-Z_]+): (.+)$/);
+  if (coded && currentLang() === 'mr' && MARATHI_ERRORS[coded[1]]) {
+    const left = coded[2].match(/(\d+) tries left/);
+    const first = coded[2].includes('first time');
+    return MARATHI_ERRORS[coded[1]] + (left ? ` आणखी ${left[1]} प्रयत्न शिल्लक.` : '') + (first ? ' पहिल्यांदा येत असाल तर क्लिनिककडून मिळालेला सेटअप कोड वापरा.' : '');
+  }
+  if (coded) return coded[2].charAt(0).toUpperCase() + coded[2].slice(1) + '.';
   const m = raw.toLowerCase();
   if (m.includes('invalid login credentials')) return 'The email or password is incorrect.';
   if (m.includes('email not confirmed'))
@@ -156,6 +178,6 @@ export function friendlyError(error: unknown): string {
   if (m.includes('password') && (m.includes('weak') || m.includes('at least')))
     return 'Choose a stronger password: at least 10 characters.';
   if (m.includes('failed to fetch') || m.includes('network'))
-    return 'We could not reach the server. Check your internet connection and try again.';
-  return raw || 'Something went wrong. Please try again.';
+    return tr('We could not reach the server. Check your internet connection and try again.', 'सर्व्हरशी संपर्क झाला नाही. इंटरनेट तपासा आणि पुन्हा प्रयत्न करा.');
+  return raw || tr('Something went wrong. Please try again.', 'काहीतरी चुकले. कृपया पुन्हा प्रयत्न करा.');
 }

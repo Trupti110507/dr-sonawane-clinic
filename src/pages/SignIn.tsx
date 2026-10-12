@@ -6,6 +6,7 @@ import { telHref, type ClinicSettings } from '../lib/clinic';
 import { pinProblem, pinSignIn } from '../lib/patientLogin';
 import { supabase } from '../lib/supabase';
 import { btnOutline, btnPrimary, card, pageTitle, textLink } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 type Tab = 'patient' | 'staff';
 
@@ -27,7 +28,7 @@ export default function SignIn({ settings }: { settings: ClinicSettings }) {
 
   return (
     <main id="main" className="mx-auto max-w-lg px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className={pageTitle}>Sign in</h1>
+      <h1 className={pageTitle}>{tr('Sign in', 'साइन इन')}</h1>
       {idle && (
         <div className="mt-6">
           <Notice kind="info">You were signed out because the app was not used for {STAFF_IDLE_MINUTES} minutes. Sign in again to continue.</Notice>
@@ -43,12 +44,12 @@ export default function SignIn({ settings }: { settings: ClinicSettings }) {
         </div>
       ) : (
         <>
-          <div role="tablist" aria-label="Who is signing in" className="mt-6 flex gap-1 rounded-full border border-line bg-white p-1">
+          <div role="tablist" aria-label={tr('Who is signing in', 'कोण साइन इन करत आहे')} className="mt-6 flex gap-1 rounded-full border border-line bg-white p-1">
             <button role="tab" aria-selected={tab === 'patient'} className={tabLook(tab === 'patient')} onClick={() => setTab('patient')}>
-              Patient
+              {tr('Patient', 'रुग्ण')}
             </button>
             <button role="tab" aria-selected={tab === 'staff'} className={tabLook(tab === 'staff')} onClick={() => setTab('staff')}>
-              Clinic staff
+              {tr('Clinic staff', 'क्लिनिक कर्मचारी')}
             </button>
           </div>
           <div className={`${card} mt-5`}>{tab === 'patient' ? <PatientPinSignIn settings={settings} /> : <StaffSignIn />}</div>
@@ -91,13 +92,13 @@ function PatientPinSignIn({ settings }: { settings: ClinicSettings }) {
     e.preventDefault();
     setFormError('');
     const found: Record<string, string> = {};
-    if (!/^\d{1,8}$/.test(patientNo)) found.patientNo = 'Enter the patient number from your clinic slip.';
-    if (mode === 'pin' && !/^\d{6}$/.test(pin)) found.pin = 'Enter your 6-digit PIN.';
+    if (!/^\d{1,8}$/.test(patientNo)) found.patientNo = tr('Enter the patient number from your clinic slip.', 'क्लिनिकच्या स्लिपवरील रुग्ण क्रमांक टाका.');
+    if (mode === 'pin' && !/^\d{6}$/.test(pin)) found.pin = tr('Enter your 6-digit PIN.', 'तुमचा 6 अंकी PIN टाका.');
     if (mode === 'setup') {
-      if (!/^\d{6}$/.test(code)) found.code = 'Enter the 6-digit setup code from your slip.';
+      if (!/^\d{6}$/.test(code)) found.code = tr('Enter the 6-digit setup code from your slip.', 'स्लिपवरील 6 अंकी सेटअप कोड टाका.');
       const problem = pinProblem(newPin);
       if (problem) found.newPin = problem;
-      else if (again !== newPin) found.again = 'The two PINs are not the same. Type the new PIN again.';
+      else if (again !== newPin) found.again = tr('The two PINs are not the same. Type the new PIN again.', 'दोन्ही PIN सारखे नाहीत. नवीन PIN पुन्हा टाका.');
     }
     setErrors(found);
     if (Object.keys(found).length) return;
@@ -118,7 +119,7 @@ function PatientPinSignIn({ settings }: { settings: ClinicSettings }) {
       <div className="space-y-4">
         <PatientSignIn />
         <button type="button" className={`${btnOutline} w-full`} onClick={() => switchTo('pin')}>
-          Sign in with patient number and PIN
+          {tr('Sign in with patient number and PIN', 'रुग्ण क्रमांक आणि PIN ने साइन इन करा')}
         </button>
       </div>
     );
@@ -129,40 +130,43 @@ function PatientPinSignIn({ settings }: { settings: ClinicSettings }) {
     <form onSubmit={submit} noValidate className="space-y-5">
       <p className="text-muted">
         {mode === 'pin'
-          ? 'Use the patient number on your clinic slip and your 6-digit PIN.'
-          : 'First time, or forgot your PIN? Use the setup code the clinic gave you, then choose a new 6-digit PIN.'}
+          ? tr('Use the patient number on your clinic slip and your 6-digit PIN.', 'क्लिनिकच्या स्लिपवरील रुग्ण क्रमांक आणि तुमचा 6 अंकी PIN वापरा.')
+          : tr(
+              'First time, or forgot your PIN? Use the setup code the clinic gave you, then choose a new 6-digit PIN.',
+              'पहिल्यांदा येत आहात किंवा PIN विसरलात? क्लिनिकने दिलेला सेटअप कोड वापरा आणि नवीन 6 अंकी PIN निवडा.',
+            )}
       </p>
-      <Field label="Patient number" inputMode="numeric" autoComplete="username" className="" value={patientNo} error={errors.patientNo} onChange={(e) => setPatientNo(digits(e.target.value, 8))} style={{ letterSpacing: '0.15em' }} />
+      <Field label={tr('Patient number', 'रुग्ण क्रमांक')} inputMode="numeric" autoComplete="username" className="" value={patientNo} error={errors.patientNo} onChange={(e) => setPatientNo(digits(e.target.value, 8))} style={{ letterSpacing: '0.15em' }} />
       {mode === 'pin' ? (
-        <Field label="PIN" type={pinType} inputMode="numeric" autoComplete="current-password" value={pin} error={errors.pin} onChange={(e) => setPin(digits(e.target.value, 6))} />
+        <Field label={tr('PIN', 'PIN')} type={pinType} inputMode="numeric" autoComplete="current-password" value={pin} error={errors.pin} onChange={(e) => setPin(digits(e.target.value, 6))} />
       ) : (
         <>
-          <Field label="Setup code from the clinic" inputMode="numeric" autoComplete="one-time-code" value={code} error={errors.code} onChange={(e) => setCode(digits(e.target.value, 6))} />
-          <Field label="Choose a new 6-digit PIN" hint="Not all the same digit, and not 123456" type={pinType} inputMode="numeric" autoComplete="new-password" value={newPin} error={errors.newPin} onChange={(e) => setNewPin(digits(e.target.value, 6))} />
-          <Field label="Type the new PIN again" type={pinType} inputMode="numeric" autoComplete="new-password" value={again} error={errors.again} onChange={(e) => setAgain(digits(e.target.value, 6))} />
+          <Field label={tr('Setup code from the clinic', 'क्लिनिककडून मिळालेला सेटअप कोड')} inputMode="numeric" autoComplete="one-time-code" value={code} error={errors.code} onChange={(e) => setCode(digits(e.target.value, 6))} />
+          <Field label={tr('Choose a new 6-digit PIN', 'नवीन 6 अंकी PIN निवडा')} hint={tr('Not all the same digit, and not 123456', 'सर्व अंक सारखे नकोत, आणि 123456 नको')} type={pinType} inputMode="numeric" autoComplete="new-password" value={newPin} error={errors.newPin} onChange={(e) => setNewPin(digits(e.target.value, 6))} />
+          <Field label={tr('Type the new PIN again', 'नवीन PIN पुन्हा टाका')} type={pinType} inputMode="numeric" autoComplete="new-password" value={again} error={errors.again} onChange={(e) => setAgain(digits(e.target.value, 6))} />
         </>
       )}
       <label className="flex min-h-11 items-center gap-3 text-ink">
         <input type="checkbox" className="h-5 w-5 accent-[var(--brand-primary)]" checked={show} onChange={(e) => setShow(e.target.checked)} />
-        Show the PIN while typing
+        {tr('Show the PIN while typing', 'टाइप करताना PIN दाखवा')}
       </label>
       {formError && <Notice kind="error">{formError}</Notice>}
       <button type="submit" disabled={busy} className={`${btnPrimary} w-full`}>
-        {busy ? 'Please wait…' : mode === 'pin' ? 'Sign in' : 'Save PIN and sign in'}
+        {busy ? tr('Please wait…', 'कृपया थांबा…') : mode === 'pin' ? tr('Sign in', 'साइन इन') : tr('Save PIN and sign in', 'PIN सेव्ह करा आणि साइन इन करा')}
       </button>
       <button type="button" className={`${btnOutline} w-full`} onClick={() => switchTo(mode === 'pin' ? 'setup' : 'pin')}>
-        {mode === 'pin' ? 'First time or forgot PIN?' : 'I already have a PIN'}
+        {mode === 'pin' ? tr('First time or forgot PIN?', 'पहिल्यांदा / PIN विसरलात?') : tr('I already have a PIN', 'माझ्याकडे PIN आहे')}
       </button>
       <p className="text-[0.95rem] text-muted">
-        No patient number yet? Ask at the clinic, or call{' '}
+        {tr('No patient number yet? Ask at the clinic, or call', 'अजून रुग्ण क्रमांक नाही? क्लिनिकमध्ये विचारा किंवा फोन करा')}{' '}
         <a href={telHref(settings.phone_primary)} className={textLink}>
           {settings.phone_primary}
         </a>
-        . You can also book an appointment without signing in by calling the clinic.
+        {tr('. You can also book an appointment without signing in by calling the clinic.', '. साइन इन न करता क्लिनिकला फोन करूनही अपॉइंटमेंट बुक करता येते.')}
       </p>
       {settings.sms_login && (
         <button type="button" className={`${textLink} text-[0.95rem]`} onClick={() => switchTo('sms')}>
-          Sign in with an SMS code instead
+          {tr('Sign in with an SMS code instead', 'SMS कोडने साइन इन करा')}
         </button>
       )}
     </form>

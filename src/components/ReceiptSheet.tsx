@@ -3,6 +3,7 @@ import { dayOf, timeOf } from '../lib/appointments';
 import { formatDate, formatInr, logoUrl, type ClinicSettings } from '../lib/clinic';
 import { METHOD_LABEL, type Payment } from '../lib/payments';
 import { btnSmall, card } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface Props {
   payment: Payment;
@@ -40,16 +41,16 @@ export default function ReceiptSheet({ payment: p, patientName, settings, action
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:mt-4">
         <div>
-          <h3 className="text-[1.05rem] font-bold text-ink">Receipt {p.receipt_no}</h3>
+          <h3 className="text-[1.05rem] font-bold text-ink">{tr('Receipt', 'पावती')} {p.receipt_no}</h3>
           <p className="text-[0.95rem] text-muted">
             {formatDate(dayOf(p.paid_at, tz))}, {timeOf(p.paid_at, tz)}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {p.status === 'refunded' && <span className="rounded-full bg-[#fdf3f2] px-3 py-1 text-[0.95rem] font-semibold text-[#8c1d18] ring-1 ring-[#e3b9b6]">Refunded</span>}
+          {p.status === 'refunded' && <span className="rounded-full bg-[#fdf3f2] px-3 py-1 text-[0.95rem] font-semibold text-[#8c1d18] ring-1 ring-[#e3b9b6]">{tr('Refunded', 'परत केले')}</span>}
           <span className="no-print flex gap-2">
             <button className={btnSmall} onClick={print}>
-              Print
+              {tr('Print', 'प्रिंट करा')}
             </button>
             {actions}
           </span>
@@ -59,10 +60,10 @@ export default function ReceiptSheet({ payment: p, patientName, settings, action
       <dl className="mt-4 divide-y divide-line border-y border-line">
         {(
           [
-            ['Received from', patientName],
-            ['For', p.description],
-            ['Doctor', p.doctor_name],
-            ['Paid by', METHOD_LABEL[p.method]],
+            [tr('Received from', 'कडून मिळाले'), patientName],
+            [tr('For', 'कशासाठी'), p.description],
+            [tr('Doctor', 'डॉक्टर'), p.doctor_name],
+            [tr('Paid by', 'भरण्याची पद्धत'), METHOD_LABEL[p.method]],
           ] as [string, string | null][]
         )
           .filter(([, value]) => value)
@@ -73,17 +74,17 @@ export default function ReceiptSheet({ payment: p, patientName, settings, action
             </div>
           ))}
         <div className="flex justify-between gap-4 py-2.5">
-          <dt className="font-semibold text-ink">Amount received</dt>
+          <dt className="font-semibold text-ink">{tr('Amount received', 'मिळालेली रक्कम')}</dt>
           <dd className="text-right text-[1.05rem] font-bold text-ink">{formatInr(p.amount_inr)}</dd>
         </div>
       </dl>
       {p.status === 'refunded' && p.refunded_at && (
         <p className="mt-3 text-[0.95rem] text-muted">
-          Refunded on {formatDate(dayOf(p.refunded_at, tz))}
+          {tr(`Refunded on ${formatDate(dayOf(p.refunded_at, tz))}`, `${formatDate(dayOf(p.refunded_at, tz))} रोजी परत केले`)}
           {p.refund_reason ? `: ${p.refund_reason}` : ''}.
         </p>
       )}
-      <p className="print-only mt-8 text-[0.95rem] text-muted">This receipt was produced by the clinic's computer system.</p>
+      <p className="print-only mt-8 text-[0.95rem] text-muted">{tr("This receipt was produced by the clinic's computer system.", 'ही पावती क्लिनिकच्या संगणक प्रणालीतून तयार झाली आहे.')}</p>
     </article>
   );
 }

@@ -8,6 +8,7 @@ import { formatDate, formatInr, type ClinicData } from '../../lib/clinic';
 import { payOnline, type Payment, type UnpaidAppointment } from '../../lib/payments';
 import { supabase } from '../../lib/supabase';
 import { btnPrimary, card, pageTitle } from '../../lib/ui';
+import { tr } from '../../lib/i18n';
 
 /** The patient's own payments: what is still to pay, and every receipt. */
 export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
@@ -39,8 +40,9 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
     setPaying(appointmentId);
     try {
       const result = await payOnline(appointmentId, { clinicName: settings.name, color: settings.primary_color, phone: profile?.phone });
-      if (result === 'paid') setNotice('Payment received. Thank you. Your receipt is below.');
-      if (result === 'processing') setNotice('Your payment is being confirmed. The receipt will appear here in a few minutes. Please do not pay again.');
+      if (result === 'paid') setNotice(tr('Payment received. Thank you. Your receipt is below.', 'पेमेंट मिळाले. धन्यवाद. तुमची पावती खाली आहे.'));
+      if (result === 'processing')
+        setNotice(tr('Your payment is being confirmed. The receipt will appear here in a few minutes. Please do not pay again.', 'तुमचे पेमेंट तपासले जात आहे. काही मिनिटांत पावती इथे दिसेल. कृपया पुन्हा पैसे भरू नका.'));
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -50,7 +52,7 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
 
   return (
     <PortalShell label="Patient portal" links={PATIENT_LINKS}>
-      <h1 className={pageTitle}>Payments</h1>
+      <h1 className={pageTitle}>{tr('Payments', 'पेमेंट')}</h1>
       {error && (
         <div className="mt-6 max-w-3xl">
           <Notice kind="error">{error}</Notice>
@@ -62,13 +64,13 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
         </div>
       )}
       {due === null ? (
-        <p role="status" className="mt-6 text-muted">Loading your payments…</p>
+        <p role="status" className="mt-6 text-muted">{tr('Loading your payments…', 'तुमची पेमेंट लोड होत आहेत…')}</p>
       ) : (
         <>
           {due.length > 0 && (
             <section className="mt-6 max-w-3xl" aria-labelledby="due-title">
               <h2 id="due-title" className="font-display text-2xl">
-                To pay
+                {tr('To pay', 'भरायचे बाकी')}
               </h2>
               <ul className="mt-3 space-y-3">
                 {due.map((a) => (
@@ -83,28 +85,31 @@ export default function PatientPayments({ clinic }: { clinic: ClinicData }) {
                     </div>
                     {settings.online_payments ? (
                       <button className={`${btnPrimary} shrink-0`} disabled={paying !== ''} onClick={() => void pay(a.appointment_id)}>
-                        {paying === a.appointment_id ? 'Opening payment…' : `Pay ${formatInr(a.price_inr)} online`}
+                        {paying === a.appointment_id ? tr('Opening payment…', 'पेमेंट उघडत आहे…') : tr(`Pay ${formatInr(a.price_inr)} online`, `${formatInr(a.price_inr)} ऑनलाइन भरा`)}
                       </button>
                     ) : (
-                      <p className="shrink-0 font-semibold text-muted">Pay at the clinic</p>
+                      <p className="shrink-0 font-semibold text-muted">{tr('Pay at the clinic', 'क्लिनिकमध्ये भरा')}</p>
                     )}
                   </li>
                 ))}
               </ul>
               <p className="mt-3 text-[0.95rem] text-muted">
                 {settings.online_payments
-                  ? 'You can also pay at the clinic by cash, UPI or card. Card and UPI details are entered on the payment company\'s secure page, not in this app.'
-                  : 'Pay at the clinic by cash, UPI or card when you come for your appointment.'}
+                  ? tr(
+                      "You can also pay at the clinic by cash, UPI or card. Card and UPI details are entered on the payment company's secure page, not in this app.",
+                      'तुम्ही क्लिनिकमध्ये रोख, UPI किंवा कार्डनेही भरू शकता. कार्ड आणि UPI ची माहिती पेमेंट कंपनीच्या सुरक्षित पानावर टाकली जाते, या ॲपमध्ये नाही.',
+                    )
+                  : tr('Pay at the clinic by cash, UPI or card when you come for your appointment.', 'अपॉइंटमेंटला याल तेव्हा क्लिनिकमध्ये रोख, UPI किंवा कार्डने भरा.')}
               </p>
             </section>
           )}
 
           <section className="mt-10 max-w-3xl" aria-labelledby="receipts-title">
             <h2 id="receipts-title" className="font-display text-2xl">
-              Receipts
+              {tr('Receipts', 'पावत्या')}
             </h2>
             {receipts.length === 0 ? (
-              <p className="mt-3 text-muted">You have no receipts yet. A receipt appears here as soon as a payment is recorded.</p>
+              <p className="mt-3 text-muted">{tr('You have no receipts yet. A receipt appears here as soon as a payment is recorded.', 'अजून कोणतीही पावती नाही. पेमेंट नोंदवताच पावती इथे दिसेल.')}</p>
             ) : (
               <ul className="mt-3 space-y-4">
                 {receipts.map((r) => (

@@ -34,6 +34,8 @@ import PatientPayments from './pages/portal/PatientPayments';
 import AdminPayments from './pages/portal/AdminPayments';
 import SiteHeader from './components/SiteHeader';
 import RequireRole from './components/RequireRole';
+import { tr } from './lib/i18n';
+import { useLang } from './lib/lang';
 
 type State =
   | { status: 'loading' }
@@ -41,6 +43,7 @@ type State =
   | { status: 'ready'; clinic: ClinicData };
 
 export default function App() {
+  const { lang } = useLang();
   const [state, setState] = useState<State>({ status: 'loading' });
 
   // Loads (or re-loads) the clinic's public details. Admin screens call
@@ -92,7 +95,7 @@ export default function App() {
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2"
       >
-        Skip to main content
+        {tr('Skip to main content', 'मुख्य मजकुराकडे जा')}
       </a>
       {clinic.source === 'sample' && (
         <p className="bg-lavender-100 px-4 py-2 text-center text-sm text-ink">
@@ -101,7 +104,8 @@ export default function App() {
         </p>
       )}
       <SiteHeader settings={clinic.settings} />
-      <Routes>
+      {/* Drawn again from scratch when the language changes */}
+      <Routes key={lang}>
         <Route path="/" element={<Welcome clinic={clinic} />} />
         <Route path="/book" element={<Book clinic={clinic} />} />
         {/* Accounts */}
@@ -142,7 +146,7 @@ export default function App() {
 
         <Route
           path="*"
-          element={<ComingSoon title="Page not found" stage={null} settings={clinic.settings} />}
+          element={<ComingSoon title={tr('Page not found', 'पान सापडले नाही')} stage={null} settings={clinic.settings} />}
         />
       </Routes>
     </div>

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { portalPath, useAuth, type Role } from '../lib/auth';
 import { btnOutline, btnPrimary, pageTitle } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 /**
  * Wraps every portal page. It decides what a visitor sees, but it is NOT
@@ -11,15 +12,15 @@ export default function RequireRole({ role, children }: { role: Role; children: 
   const { loading, session, profile, signOut } = useAuth();
   const location = useLocation();
 
-  if (loading) return <p role="status" className="p-10 text-center text-muted">Loading…</p>;
+  if (loading) return <p role="status" className="p-10 text-center text-muted">{tr('Loading…', 'लोड होत आहे…')}</p>;
   if (!session) return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
 
   if (!profile || !profile.is_active) {
     return (
-      <Blocked title={profile ? 'This account has been deactivated' : 'We could not find your account'}>
-        <p className="mt-3 text-muted">Please call the clinic for help.</p>
+      <Blocked title={profile ? tr('This account has been deactivated', 'हे खाते बंद केले आहे') : tr('We could not find your account', 'तुमचे खाते सापडले नाही')}>
+        <p className="mt-3 text-muted">{tr('Please call the clinic for help.', 'मदतीसाठी कृपया क्लिनिकला फोन करा.')}</p>
         <button className={`${btnOutline} mt-8`} onClick={() => void signOut()}>
-          Sign out
+          {tr('Sign out', 'साइन आउट')}
         </button>
       </Blocked>
     );
@@ -27,10 +28,10 @@ export default function RequireRole({ role, children }: { role: Role; children: 
 
   if (profile.role !== role) {
     return (
-      <Blocked title="You do not have access to this page">
-        <p className="mt-3 text-muted">This area is for a different kind of account.</p>
+      <Blocked title={tr('You do not have access to this page', 'हे पान तुमच्यासाठी नाही')}>
+        <p className="mt-3 text-muted">{tr('This area is for a different kind of account.', 'हा भाग वेगळ्या प्रकारच्या खात्यासाठी आहे.')}</p>
         <Link to={portalPath(profile.role)} className={`${btnPrimary} mt-8`}>
-          Go to my portal
+          {tr('Go to my portal', 'माझ्या पोर्टलवर जा')}
         </Link>
       </Blocked>
     );

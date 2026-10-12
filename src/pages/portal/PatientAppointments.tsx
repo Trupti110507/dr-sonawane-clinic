@@ -6,6 +6,7 @@ import { addDays } from '../../lib/appointments';
 import { clinicDate, type ClinicData } from '../../lib/clinic';
 import { useAppointments } from '../../lib/useAppointments';
 import { btnPrimary, pageTitle } from '../../lib/ui';
+import { tr } from '../../lib/i18n';
 
 export default function PatientAppointments({ clinic }: { clinic: ClinicData }) {
   const today = clinicDate(clinic.settings.timezone);
@@ -18,9 +19,9 @@ export default function PatientAppointments({ clinic }: { clinic: ClinicData }) 
   return (
     <PortalShell label="Patient portal" links={PATIENT_LINKS}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className={pageTitle}>My appointments</h1>
+        <h1 className={pageTitle}>{tr('My appointments', 'माझ्या अपॉइंटमेंट')}</h1>
         <Link to="/book" className={btnPrimary}>
-          Book appointment
+          {tr('Book appointment', 'अपॉइंटमेंट बुक करा')}
         </Link>
       </div>
       {error && (
@@ -29,15 +30,15 @@ export default function PatientAppointments({ clinic }: { clinic: ClinicData }) 
         </div>
       )}
       {rows === null ? (
-        <p role="status" className="mt-6 text-muted">Loading your appointments…</p>
+        <p role="status" className="mt-6 text-muted">{tr('Loading your appointments…', 'तुमच्या अपॉइंटमेंट लोड होत आहेत…')}</p>
       ) : (
         <>
           <section className="mt-8 max-w-3xl" aria-labelledby="upcoming-title">
             <h2 id="upcoming-title" className="font-display text-2xl">
-              Upcoming
+              {tr('Upcoming', 'पुढील')}
             </h2>
             {upcoming.length === 0 ? (
-              <p className="mt-3 text-muted">You have no upcoming appointments.</p>
+              <p className="mt-3 text-muted">{tr('You have no upcoming appointments.', 'तुमची कोणतीही पुढील अपॉइंटमेंट नाही.')}</p>
             ) : (
               <ul className="mt-2 divide-y divide-line border-y border-line">
                 {upcoming.map((a) => (
@@ -49,7 +50,7 @@ export default function PatientAppointments({ clinic }: { clinic: ClinicData }) 
           {past.length > 0 && (
             <section className="mt-10 max-w-3xl" aria-labelledby="past-title">
               <h2 id="past-title" className="font-display text-2xl">
-                Earlier
+                {tr('Earlier', 'आधीच्या')}
               </h2>
               <ul className="mt-2 divide-y divide-line border-y border-line">
                 {past.map((a) => (

@@ -4,6 +4,7 @@ import { friendlyError } from '../lib/auth';
 import { clinicDate, formatDate, sessionLabel, type ClinicData } from '../lib/clinic';
 import { supabase } from '../lib/supabase';
 import { Notice } from './Field';
+import { tr } from '../lib/i18n';
 
 interface Props {
   clinic: ClinicData;
@@ -63,12 +64,12 @@ export default function SlotPicker({ clinic, doctorId, serviceId, excludeId, val
         { label: sessionLabel(dayHours!.opens_at ?? '00:00'), list: (slots ?? []).filter((x) => clock(x) < breakStart) },
         { label: sessionLabel(dayHours!.break_end!), list: (slots ?? []).filter((x) => clock(x) >= breakStart) },
       ]
-    : [{ label: 'Available', list: slots ?? [] }];
+    : [{ label: tr('Available', 'उपलब्ध'), list: slots ?? [] }];
 
   return (
     <div>
-      <p className="font-semibold text-ink">Day</p>
-      <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-3" role="group" aria-label="Choose a day">
+      <p className="font-semibold text-ink">{tr('Day', 'दिवस')}</p>
+      <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-3" role="group" aria-label={tr('Choose a day', 'दिवस निवडा')}>
         {days.map((d) => {
           const s = shortDate(d.date);
           const active = d.date === date;
@@ -78,7 +79,7 @@ export default function SlotPicker({ clinic, doctorId, serviceId, excludeId, val
               type="button"
               disabled={d.closed}
               aria-pressed={active}
-              aria-label={`${formatDate(d.date)}${d.closed ? `, closed${d.holiday ? ` (${d.holiday})` : ''}` : ''}`}
+              aria-label={`${formatDate(d.date)}${d.closed ? `, ${tr('closed', 'बंद')}${d.holiday ? ` (${d.holiday})` : ''}` : ''}`}
               onClick={() => {
                 setDate(d.date);
                 onChange('');
@@ -91,7 +92,7 @@ export default function SlotPicker({ clinic, doctorId, serviceId, excludeId, val
                     : 'border-sage-200 bg-white text-ink hover:bg-sage-50'
               }`}
             >
-              <span className="text-sm">{d.date === today ? 'Today' : s.weekday}</span>
+              <span className="text-sm">{d.date === today ? tr('Today', 'आज') : s.weekday}</span>
               <span className="text-xl font-bold leading-tight">{s.day}</span>
               <span className="text-sm">{s.month}</span>
             </button>
@@ -99,16 +100,16 @@ export default function SlotPicker({ clinic, doctorId, serviceId, excludeId, val
         })}
       </div>
 
-      <p className="mt-3 font-semibold text-ink">Time on {formatDate(date)}</p>
+      <p className="mt-3 font-semibold text-ink">{tr(`Time on ${formatDate(date)}`, `${formatDate(date)} रोजी वेळ`)}</p>
       {error && (
         <div className="mt-2">
           <Notice kind="error">{error}</Notice>
         </div>
       )}
       {slots === null ? (
-        <p role="status" className="mt-2 text-muted">Checking free times…</p>
+        <p role="status" className="mt-2 text-muted">{tr('Checking free times…', 'मोकळ्या वेळा तपासत आहे…')}</p>
       ) : slots.length === 0 ? (
-        !error && <p className="mt-2 text-muted">No free times on this day. Please choose another day.</p>
+        !error && <p className="mt-2 text-muted">{tr('No free times on this day. Please choose another day.', 'या दिवशी मोकळी वेळ नाही. कृपया दुसरा दिवस निवडा.')}</p>
       ) : (
         <div className="mt-2 space-y-4">
           {groups
@@ -116,7 +117,7 @@ export default function SlotPicker({ clinic, doctorId, serviceId, excludeId, val
             .map((g) => (
               <div key={g.label}>
                 <p className="text-[0.95rem] text-muted">{g.label}</p>
-                <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6" role="group" aria-label={`${g.label} times`}>
+                <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6" role="group" aria-label={`${g.label} ${tr('times', 'वेळा')}`}>
                   {g.list.map((s) => (
                     <button
                       key={s}

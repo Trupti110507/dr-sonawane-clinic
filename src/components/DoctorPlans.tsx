@@ -5,6 +5,7 @@ import { PLAN_STATUS_LABEL, type PlanStatus, type TreatmentPlan } from '../lib/r
 import { supabase } from '../lib/supabase';
 import { btnOutline, btnPrimary, btnSmall, card, inputBox } from '../lib/ui';
 import Field, { Notice } from './Field';
+import { tr } from '../lib/i18n';
 
 interface Props {
   patientId: string;
@@ -20,10 +21,8 @@ const EMPTY: Form = { title: '', patient_instructions: '', clinical_notes: '', t
 export function SessionProgress({ done, total }: { done: number; total: number }) {
   return (
     <div className="mt-3">
-      <p className="font-semibold text-ink">
-        {done} of {total} sessions done
-      </p>
-      <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-sage-100" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label="Sessions done">
+      <p className="font-semibold text-ink">{tr(`${done} of ${total} sessions done`, `${total} पैकी ${done} सत्रे पूर्ण`)}</p>
+      <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-sage-100" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={tr('Sessions done', 'पूर्ण सत्रे')}>
         <div className="h-full rounded-full bg-sage-600" style={{ width: `${Math.round((done / total) * 100)}%` }} />
       </div>
     </div>

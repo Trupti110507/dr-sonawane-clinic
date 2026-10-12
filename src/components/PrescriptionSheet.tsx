@@ -3,6 +3,7 @@ import { dayOf } from '../lib/appointments';
 import { formatDate, logoUrl, type ClinicSettings } from '../lib/clinic';
 import type { Prescription } from '../lib/records';
 import { btnSmall, card } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface Props {
   rx: Prescription;
@@ -41,18 +42,18 @@ export default function PrescriptionSheet({ rx, settings, patientName, actions }
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:mt-4">
         <div>
-          <h3 className="text-[1.05rem] font-bold text-ink">Prescription of {formatDate(date)}</h3>
+          <h3 className="text-[1.05rem] font-bold text-ink">{tr(`Prescription of ${formatDate(date)}`, `${formatDate(date)} चे प्रिस्क्रिप्शन`)}</h3>
           <p className="text-[0.95rem] text-muted">
             {rx.doctor_name}
             {rx.doctor_qualification ? `, ${rx.doctor_qualification}` : ''}
-            {rx.doctor_registration_no ? ` · Reg. no. ${rx.doctor_registration_no}` : ''}
+            {rx.doctor_registration_no ? ` · ${tr('Reg. no.', 'नोंदणी क्र.')} ${rx.doctor_registration_no}` : ''}
           </p>
-          <p className="text-[0.95rem] text-muted">Patient: {patientName}</p>
+          <p className="text-[0.95rem] text-muted">{tr('Patient', 'रुग्ण')}: {patientName}</p>
         </div>
         {rx.status === 'approved' && (
           <div className="no-print flex shrink-0 gap-2">
             <button className={btnSmall} onClick={print}>
-              Print
+              {tr('Print', 'प्रिंट करा')}
             </button>
             {actions}
           </div>
@@ -74,16 +75,19 @@ export default function PrescriptionSheet({ rx, settings, patientName, actions }
       )}
       {rx.general_instructions && (
         <div className="mt-4">
-          <p className="text-[0.95rem] text-muted">Instructions</p>
+          <p className="text-[0.95rem] text-muted">{tr('Instructions', 'सूचना')}</p>
           <p className="whitespace-pre-wrap text-ink">{rx.general_instructions}</p>
         </div>
       )}
       {rx.approved_at && (
         <p className="mt-4 text-[0.95rem] text-muted">
-          Approved by {rx.doctor_name} on {formatDate(dayOf(rx.approved_at, settings.timezone))}.
+          {tr(
+            `Approved by ${rx.doctor_name} on ${formatDate(dayOf(rx.approved_at, settings.timezone))}.`,
+            `${rx.doctor_name} यांनी ${formatDate(dayOf(rx.approved_at, settings.timezone))} रोजी मंजूर केले.`,
+          )}
         </p>
       )}
-      <p className="print-only mt-10 text-ink">Doctor's signature: ______________________</p>
+      <p className="print-only mt-10 text-ink">{tr("Doctor's signature", 'डॉक्टरांची सही')}: ______________________</p>
     </article>
   );
 }

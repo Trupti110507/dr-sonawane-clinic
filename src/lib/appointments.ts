@@ -1,4 +1,5 @@
-import { clinicDate } from './clinic';
+import { clinicDate, clockText } from './clinic';
+import { currentLang, tr } from './i18n';
 import { supabase } from './supabase';
 
 export type AppointmentStatus = 'booked' | 'completed' | 'cancelled' | 'no_show';
@@ -22,12 +23,16 @@ export interface Appointment {
   patient_phone: string | null;
 }
 
-export const STATUS_LABEL: Record<AppointmentStatus, string> = {
-  booked: 'Booked',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-  no_show: 'Did not attend',
+const STATUS_TEXT: Record<AppointmentStatus, [string, string]> = {
+  booked: ['Booked', 'बुक केलेली'],
+  completed: ['Completed', 'पूर्ण'],
+  cancelled: ['Cancelled', 'रद्द'],
+  no_show: ['Did not attend', 'हजर नाही'],
 };
+/** Status names in the language chosen. */
+export const STATUS_LABEL = new Proxy({} as Record<AppointmentStatus, string>, {
+  get: (_, key: string) => (STATUS_TEXT[key as AppointmentStatus] ? tr(...STATUS_TEXT[key as AppointmentStatus]) : undefined),
+});
 
 /** Badge colours: booked lavender, completed sage, cancelled grey, no-show amber. */
 export const STATUS_LOOK: Record<AppointmentStatus, string> = {
@@ -78,8 +83,7 @@ function clockParts(iso: string, timezone: string): { hour: number; minute: numb
 /** An instant as clinic clock time, e.g. "5:30 pm". */
 export function timeOf(iso: string, timezone: string): string {
   const { hour, minute } = clockParts(iso, timezone);
-  const h12 = hour % 12 === 0 ? 12 : hour % 12;
-  return `${h12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'am' : 'pm'}`;
+  return clockText(hour, minute);
 }
 
 /** An instant as 24-hour clinic clock time, e.g. "17:30". Sorts and compares as text. */
@@ -104,11 +108,14 @@ export function clinicInstant(isoDate: string, time: string, timezone: string): 
 
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const SHORT_DAYS_MR = ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
+const SHORT_MONTHS_MR = ['जाने', 'फेब्रु', 'मार्च', 'एप्रि', 'मे', 'जून', 'जुलै', 'ऑग', 'सप्टें', 'ऑक्टो', 'नोव्हें', 'डिसें'];
 
 /** "2026-10-12" -> { weekday: "Mon", day: 12, month: "Oct" } */
 export function shortDate(isoDate: string): { weekday: string; day: number; month: string } {
   const [, m, d] = isoDate.split('-').map(Number);
-  return { weekday: SHORT_DAYS[weekdayOf(isoDate)], day: d, month: SHORT_MONTHS[m - 1] };
+  const mr = currentLang() === 'mr';
+  return { weekday: (mr ? SHORT_DAYS_MR : SHORT_DAYS)[weekdayOf(isoDate)], day: d, month: (mr ? SHORT_MONTHS_MR : SHORT_MONTHS)[m - 1] };
 }
 
 /** "9198765 43210" style phone for display: "919876543210" -> "+91 98765 43210" */

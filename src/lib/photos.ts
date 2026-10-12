@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { tr } from './i18n';
 
 /** The private storage folder. Nothing in it has a public link. */
 export const PHOTO_BUCKET = 'patient-photos';
@@ -15,6 +16,18 @@ export const CONSENT_WORDING =
   'and keep them in my medical record, to follow the progress of my treatment. Only the doctors treating me can ' +
   'see them. They will not be used for teaching, advertising or social media. I can withdraw this consent at any ' +
   'time: no new photographs will be taken after that, and I can ask the clinic to delete the existing ones.';
+
+/** The same agreement in Marathi. A patient who agrees in Marathi has this exact text saved with their consent. */
+export const CONSENT_WORDING_MR =
+  'या क्लिनिकमध्ये माझ्यावर उपचार करणारे डॉक्टर माझ्या उपचाराची प्रगती पाहण्यासाठी माझ्या बाधित त्वचा, केस किंवा नखांचे ' +
+  'फोटो काढून ते माझ्या वैद्यकीय नोंदीत ठेवू शकतात, याला मी संमती देतो/देते. हे फोटो फक्त माझ्यावर उपचार करणारे डॉक्टरच ' +
+  'पाहू शकतात. ते शिकवण्यासाठी, जाहिरातीसाठी किंवा सोशल मीडियावर वापरले जाणार नाहीत. मी ही संमती कधीही मागे घेऊ ' +
+  'शकतो/शकते: त्यानंतर नवीन फोटो काढले जाणार नाहीत, आणि आधीचे फोटो हटवण्याची विनंती मी क्लिनिकला करू शकतो/शकते.';
+
+/** The agreement in the language the patient is reading. */
+export function consentWording(): string {
+  return tr(CONSENT_WORDING, CONSENT_WORDING_MR);
+}
 
 export interface PhotoConsent {
   given_at: string;

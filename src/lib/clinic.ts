@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { currentLang, tr } from './i18n';
 
 export interface ClinicSettings {
   name: string;
@@ -177,19 +178,32 @@ export function clinicDate(timezone: string, now = new Date(), addDays = 0): str
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS_MR = ['जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून', 'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'];
+const DAYS_MR = ['रविवार', 'सोमवार', 'मंगळवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+
+/** Clock time in words people use: "11:00 am", or in Marathi "सकाळी 11:00". */
+export function clockText(h: number, m: number): string {
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  const time = `${hour12}:${String(m).padStart(2, '0')}`;
+  if (currentLang() === 'mr') {
+    const part = h < 12 ? 'सकाळी' : h < 16 ? 'दुपारी' : h < 20 ? 'संध्याकाळी' : 'रात्री';
+    return `${part} ${time}`;
+  }
+  return `${time} ${h < 12 ? 'am' : 'pm'}`;
+}
 
 /** "2026-11-08" -> "Sunday, 8 November 2026" (written out by hand: browsers disagree on the commas) */
 export function formatDate(isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
-  const weekday = DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-  return `${weekday}, ${d} ${MONTHS[m - 1]} ${y}`;
+  const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  if (currentLang() === 'mr') return `${DAYS_MR[day]}, ${d} ${MONTHS_MR[m - 1]} ${y}`;
+  return `${DAYS[day]}, ${d} ${MONTHS[m - 1]} ${y}`;
 }
 
 /** "09:00:00" -> "9:00 am", "17:30:00" -> "5:30 pm" */
 export function formatTime(t: string): string {
   const [h, m] = t.split(':').map(Number);
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`;
+  return clockText(h, m);
 }
 
 /** 1500 -> "₹1,500" */
@@ -240,7 +254,7 @@ export function telHref(phone: string): string {
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function weekdayName(weekday: number): string {
-  return WEEKDAYS[weekday] ?? '';
+  return (currentLang() === 'mr' ? DAYS_MR : WEEKDAYS)[weekday] ?? '';
 }
 
 /** Current weekday (0 = Sunday) and minutes since midnight, in the clinic's time zone. */
@@ -266,7 +280,7 @@ const toMinutes = (t: string) => {
 
 /** Session name: "Morning" if it starts before noon, otherwise "Afternoon". */
 export function sessionLabel(from: string): string {
-  return toMinutes(from) < 12 * 60 ? 'Morning' : 'Afternoon';
+  return toMinutes(from) < 12 * 60 ? tr('Morning', 'सकाळ') : tr('Afternoon', 'संध्याकाळ');
 }
 
 export interface DayGroup {
@@ -295,7 +309,7 @@ export function groupWeek(hours: WorkingDay[]): DayGroup[] {
   for (const g of groups) {
     const first = weekdayName(g.weekdays[0]);
     const end = weekdayName(g.weekdays[g.weekdays.length - 1]);
-    g.label = g.weekdays.length === 1 ? first : `${first} to ${end}`;
+    g.label = g.weekdays.length === 1 ? first : `${first} ${tr('to', 'ते')} ${end}`;
   }
   return groups;
 }
@@ -332,7 +346,7 @@ export function todayStatus(
 
   const current = todaySessions.find(([from, to]) => minutes >= toMinutes(from) && minutes < toMinutes(to));
   if (current) {
-    return { ...base, open: true, headline: 'Open now', detail: `Until ${formatTime(current[1])}` };
+    return { ...base, open: true, headline: tr('Open now', 'आता सुरू आहे'), detail: tr(`Until ${formatTime(current[1])}`, `${formatTime(current[1])} पर्यंत`) };
   }
 
   const laterToday = todaySessions.find(([from]) => toMinutes(from) > minutes);
@@ -340,8 +354,8 @@ export function todayStatus(
     return {
       ...base,
       open: false,
-      headline: `Opens at ${formatTime(laterToday[0])}`,
-      detail: 'Closed right now',
+      headline: tr(`Opens at ${formatTime(laterToday[0])}`, `${formatTime(laterToday[0])} वाजता सुरू होईल`),
+      detail: tr('Closed right now', 'सध्या बंद'),
     };
   }
 
@@ -351,15 +365,18 @@ export function todayStatus(
     const day = dayOf(w);
     const first = day && !holidayOn(step) ? sessionsOf(day)[0] : undefined;
     if (first) {
-      const when = step === 1 ? 'tomorrow' : step < 7 ? weekdayName(w) : `on ${formatDate(clinicDate(timezone, now, step))}`;
-      const opens = `Opens ${when} at ${formatTime(first[0])}`;
+      const date = formatDate(clinicDate(timezone, now, step));
+      const opens =
+        currentLang() === 'mr'
+          ? `${step === 1 ? 'उद्या' : step < 7 ? weekdayName(w) : `${date} रोजी`} ${formatTime(first[0])} वाजता सुरू होईल`
+          : `Opens ${step === 1 ? 'tomorrow' : step < 7 ? weekdayName(w) : `on ${date}`} at ${formatTime(first[0])}`;
       return {
         ...base,
         open: false,
-        headline: todayHoliday ? 'Closed today' : todaySessions.length ? 'Closed for today' : 'Closed today',
+        headline: todayHoliday ? tr('Closed today', 'आज बंद') : todaySessions.length ? tr('Closed for today', 'आजसाठी बंद') : tr('Closed today', 'आज बंद'),
         detail: todayHoliday ? `${todayHoliday.reason}. ${opens}` : opens,
       };
     }
   }
-  return { ...base, open: false, headline: 'Closed', detail: 'Please call the clinic' };
+  return { ...base, open: false, headline: tr('Closed', 'बंद'), detail: tr('Please call the clinic', 'कृपया क्लिनिकला फोन करा') };
 }

@@ -1,10 +1,15 @@
 import { friendlyError } from './auth';
 import { supabase } from './supabase';
+import { tr } from './i18n';
 
 export type PaymentStatus = 'paid' | 'refunded';
 export type PaymentMethod = 'cash' | 'upi' | 'card' | 'online';
 
-export const METHOD_LABEL: Record<PaymentMethod, string> = { cash: 'Cash', upi: 'UPI', card: 'Card', online: 'Online' };
+const METHOD_TEXT: Record<PaymentMethod, [string, string]> = { cash: ['Cash', 'रोख'], upi: ['UPI', 'UPI'], card: ['Card', 'कार्ड'], online: ['Online', 'ऑनलाइन'] };
+/** Payment method names in the language chosen. */
+export const METHOD_LABEL = new Proxy({} as Record<PaymentMethod, string>, {
+  get: (_, key: string) => (METHOD_TEXT[key as PaymentMethod] ? tr(...METHOD_TEXT[key as PaymentMethod]) : undefined),
+});
 /** The ways to pay at the desk. "Online" is only ever set by the payment service. */
 export const DESK_METHODS: PaymentMethod[] = ['cash', 'upi', 'card'];
 
@@ -89,7 +94,7 @@ async function callServer<T>(body: Record<string, unknown>): Promise<T> {
     } catch {
       message = '';
     }
-    throw new Error(message ? friendlyError({ message }) : 'Online payment is not available right now. Please pay at the clinic.');
+    throw new Error(message ? friendlyError({ message }) : tr('Online payment is not available right now. Please pay at the clinic.', 'ऑनलाइन पेमेंट सध्या उपलब्ध नाही. कृपया क्लिनिकमध्ये भरा.'));
   }
   return data as T;
 }
@@ -103,7 +108,7 @@ function loadCheckout(): Promise<void> {
     script.onload = () => resolve();
     script.onerror = () => {
       checkoutScript = null;
-      reject(new Error('The payment window could not be loaded. Check your internet connection and try again.'));
+      reject(new Error(tr('The payment window could not be loaded. Check your internet connection and try again.', 'पेमेंटची विंडो उघडली नाही. इंटरनेट तपासा आणि पुन्हा प्रयत्न करा.')));
     };
     document.head.appendChild(script);
   });

@@ -6,6 +6,7 @@ import { friendlyError } from '../../lib/auth';
 import { clinicDate, formatDate, type ClinicData } from '../../lib/clinic';
 import { supabase } from '../../lib/supabase';
 import { btnPrimary, card, pageTitle } from '../../lib/ui';
+import { tr } from '../../lib/i18n';
 
 export interface VisitSummary {
   visit_date: string;
@@ -30,28 +31,28 @@ export default function PatientVisits({ clinic }: { clinic: ClinicData }) {
 
   return (
     <PortalShell label="Patient portal" links={PATIENT_LINKS}>
-      <h1 className={pageTitle}>My visits</h1>
+      <h1 className={pageTitle}>{tr('My visits', 'माझ्या भेटी')}</h1>
       {error && (
         <div className="mt-6 max-w-3xl">
           <Notice kind="error">{error}</Notice>
         </div>
       )}
       {rows === null ? (
-        <p role="status" className="mt-6 text-muted">Loading your visits…</p>
+        <p role="status" className="mt-6 text-muted">{tr('Loading your visits…', 'तुमच्या भेटी लोड होत आहेत…')}</p>
       ) : (
         <>
           {due && (
             <section className={`${card} mt-6 max-w-3xl`}>
-              <h2 className="font-display text-2xl">Follow-up due</h2>
+              <h2 className="font-display text-2xl">{tr('Follow-up due', 'पुन्हा तपासणीची तारीख')}</h2>
               <p className="mt-2 text-[1.05rem] font-bold text-ink">{formatDate(due)}</p>
-              <p className="text-muted">Your doctor asked to see you again around this date.</p>
+              <p className="text-muted">{tr('Your doctor asked to see you again around this date.', 'डॉक्टरांनी या तारखेच्या आसपास पुन्हा भेटायला सांगितले आहे.')}</p>
               <Link to="/book" className={`${btnPrimary} mt-5`}>
-                Book the follow-up
+                {tr('Book the follow-up', 'पुन्हा तपासणी बुक करा')}
               </Link>
             </section>
           )}
           {rows.length === 0 ? (
-            !error && <p className="mt-6 text-muted">You have no recorded visits yet.</p>
+            !error && <p className="mt-6 text-muted">{tr('You have no recorded visits yet.', 'अजून कोणतीही भेट नोंदलेली नाही.')}</p>
           ) : (
             <ul className="mt-6 max-w-3xl divide-y divide-line border-y border-line">
               {rows.map((r, i) => (
@@ -59,7 +60,7 @@ export default function PatientVisits({ clinic }: { clinic: ClinicData }) {
                   <p className="font-semibold text-ink">{formatDate(r.visit_date)}</p>
                   <p className="text-[0.95rem] text-muted">
                     {r.doctor_name}
-                    {r.follow_up_date ? `, follow-up ${formatDate(r.follow_up_date)}` : ''}
+                    {r.follow_up_date ? `, ${tr('follow-up', 'पुन्हा तपासणी')} ${formatDate(r.follow_up_date)}` : ''}
                   </p>
                 </li>
               ))}
