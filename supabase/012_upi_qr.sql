@@ -45,7 +45,8 @@ begin
   if v_id is not null and (v_name is null or char_length(v_name) not between 2 and 60) then
     raise exception 'INVALID_PAYEE_NAME: enter the name the bank shows for this UPI ID';
   end if;
-  update public.clinic_settings set upi_id = v_id, upi_payee_name = case when v_id is null then null else v_name end;
+  -- "where id" is needed: Supabase refuses an UPDATE without a WHERE when it comes from the app.
+  update public.clinic_settings set upi_id = v_id, upi_payee_name = case when v_id is null then null else v_name end where id;
   insert into public.audit_log (actor_id, actor_role, action, table_name, record_id, patient_id)
   values (auth.uid(), 'admin', 'update', 'clinic_settings', 'upi_id', null);
 end $$;
@@ -216,6 +217,18 @@ begin
     execute format('revoke execute on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
   end loop;
+end $$;
+
+
+-- ---------- 6. Fix: the online payment switch ------------------------------
+-- Same "where" fix for the switch from Stage 8.
+create or replace function public.set_online_payments(p_on boolean)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.is_admin() then
+    raise exception 'NOT_ALLOWED: only an administrator can change this';
+  end if;
+  update public.clinic_settings set online_payments = coalesce(p_on, false) where id;
 end $$;
 
 -- Ask the website to reload its view of the database straight away.

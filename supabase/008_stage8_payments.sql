@@ -245,7 +245,7 @@ begin
   if not public.is_admin() then
     raise exception 'NOT_ALLOWED: only an administrator can change this';
   end if;
-  update public.clinic_settings set online_payments = coalesce(p_on, false);
+  update public.clinic_settings set online_payments = coalesce(p_on, false) where id;
 end $$;
 
 -- ---------- 4. Patient: own receipts, and what is still to pay ------------
